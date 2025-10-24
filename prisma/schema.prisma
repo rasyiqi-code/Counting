@@ -1,0 +1,699 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// CORE MODELS - Authentication & Authorization
+// ============================================================================
+
+model Company {
+  id          String   @id @default(uuid())
+  name        String
+  legalName   String?
+  address     String?
+  city        String?
+  province    String?
+  postalCode  String?
+  country     String   @default("Indonesia")
+  phone       String?
+  email       String?
+  website     String?
+  npwp        String?  @unique
+  logo        String?
+  fiscalYearStart DateTime @default(now())
+  baseCurrency String  @default("IDR")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  users       User[]
+  accounts    ChartOfAccount[]
+  contacts    Contact[]
+  products    Product[]
+  journals    Journal[]
+  invoices    Invoice[]
+  payments    Payment[]
+  bankAccounts BankAccount[]
+  fixedAssets FixedAsset[]
+  periods     AccountingPeriod[]
+  taxRates    TaxRate[]
+  inventoryItems InventoryItem[]
+  stockMovements StockMovement[]
+  budgets     Budget[]
+  recurringTransactions RecurringTransaction[]
+
+  @@map("companies")
+}
+
+model User {
+  id            String   @id @default(uuid())
+  companyId     String
+  email         String   @unique
+  name          String
+  password      String
+  role          String   // UserRole enum
+  isActive      Boolean  @default(true)
+  lastLoginAt   DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  company       Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  auditLogs     AuditLog[]
+  createdJournals Journal[] @relation("CreatedBy")
+  updatedJournals Journal[] @relation("UpdatedBy")
+
+  @@index([companyId])
+  @@index([email])
+  @@map("users")
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  userId      String
+  action      String   // CREATE, UPDATE, DELETE, VIEW
+  entityType  String   // Model name
+  entityId    String
+  changes     Json?    // Old and new values
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+// ============================================================================
+// MASTER DATA - Chart of Accounts
+// ============================================================================
+
+model ChartOfAccount {
+  id          String   @id @default(uuid())
+  companyId   String
+  code        String   // e.g., "1-1100"
+  name        String
+  description String?
+  accountType String   // AccountType enum: ASSET, LIABILITY, EQUITY, REVENUE, COGS, EXPENSE
+  category    String   // AccountCategory enum
+  parentId    String?  // For hierarchical structure
+  isActive    Boolean  @default(true)
+  isSystem    Boolean  @default(false) // System accounts cannot be deleted
+  balance     Decimal  @default(0) @db.Decimal(19, 4)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  parent      ChartOfAccount? @relation("AccountHierarchy", fields: [parentId], references: [id])
+  children    ChartOfAccount[] @relation("AccountHierarchy")
+  
+  journalEntries JournalEntry[]
+  products    Product[] @relation("ProductIncomeAccount")
+  productsExpense Product[] @relation("ProductExpenseAccount")
+  productsAsset Product[] @relation("ProductAssetAccount")
+  bankAccounts BankAccount[]
+  taxRates    TaxRate[]
+  fixedAssets FixedAsset[] @relation("FixedAssetAccount")
+  fixedAssetsDepreciation FixedAsset[] @relation("DepreciationExpenseAccount")
+  fixedAssetsAccumulated FixedAsset[] @relation("AccumulatedDepreciationAccount")
+
+  @@unique([companyId, code])
+  @@index([companyId])
+  @@index([accountType])
+  @@index([parentId])
+  @@map("chart_of_accounts")
+}
+
+// ============================================================================
+// MASTER DATA - Contacts (Customers, Vendors, Employees)
+// ============================================================================
+
+model Contact {
+  id          String   @id @default(uuid())
+  companyId   String
+  type        String   // ContactType enum: CUSTOMER, VENDOR, EMPLOYEE, OTHER
+  code        String   // Auto-generated code
+  name        String
+  email       String?
+  phone       String?
+  mobile      String?
+  website     String?
+  
+  // Address
+  address     String?
+  city        String?
+  province    String?
+  postalCode  String?
+  country     String   @default("Indonesia")
+  
+  // Tax Info
+  npwp        String?
+  nik         String?
+  
+  // Customer specific
+  creditLimit Decimal? @db.Decimal(19, 4)
+  paymentTerms Int?    // Days
+  
+  // Vendor specific
+  vendorCode  String?
+  bankAccountName String?
+  bankAccountNumber String?
+  bankName    String?
+  
+  isActive    Boolean  @default(true)
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  
+  invoices    Invoice[] @relation("ContactInvoices")
+  payments    Payment[]
+
+  @@unique([companyId, code])
+  @@index([companyId])
+  @@index([type])
+  @@index([name])
+  @@map("contacts")
+}
+
+// ============================================================================
+// MASTER DATA - Products & Services
+// ============================================================================
+
+model Product {
+  id          String   @id @default(uuid())
+  companyId   String
+  type        String   // ProductType enum: GOODS, SERVICE
+  sku         String   // Stock Keeping Unit
+  name        String
+  description String?
+  category    String?
+  
+  // Pricing
+  salePrice   Decimal  @default(0) @db.Decimal(19, 4)
+  purchasePrice Decimal @default(0) @db.Decimal(19, 4)
+  
+  // Unit
+  unit        String   @default("pcs") // Unit of measure
+  
+  // Inventory (for GOODS type)
+  trackInventory Boolean @default(false)
+  stockMethod String   @default("FIFO") // StockMethod enum: FIFO, AVERAGE
+  minStock    Decimal  @default(0) @db.Decimal(19, 4)
+  maxStock    Decimal? @db.Decimal(19, 4)
+  
+  // Accounting
+  incomeAccountId String?
+  expenseAccountId String?
+  assetAccountId String? // For inventory
+  
+  // Tax
+  taxable     Boolean  @default(true)
+  taxRateId   String?
+  
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  incomeAccount ChartOfAccount? @relation("ProductIncomeAccount", fields: [incomeAccountId], references: [id])
+  expenseAccount ChartOfAccount? @relation("ProductExpenseAccount", fields: [expenseAccountId], references: [id])
+  assetAccount ChartOfAccount? @relation("ProductAssetAccount", fields: [assetAccountId], references: [id])
+  taxRate     TaxRate? @relation(fields: [taxRateId], references: [id])
+  
+  inventoryItems InventoryItem[]
+  invoiceItems InvoiceItem[]
+  stockMovements StockMovement[]
+
+  @@unique([companyId, sku])
+  @@index([companyId])
+  @@index([type])
+  @@index([name])
+  @@map("products")
+}
+
+// ============================================================================
+// MASTER DATA - Bank Accounts
+// ============================================================================
+
+model BankAccount {
+  id          String   @id @default(uuid())
+  companyId   String
+  name        String   // e.g., "BCA - Account 1234567"
+  accountType String   @default("BANK") // BANK, CASH, E_WALLET
+  bankName    String?
+  accountNumber String?
+  accountHolder String?
+  
+  accountId   String   // Link to Chart of Account
+  
+  balance     Decimal  @default(0) @db.Decimal(19, 4)
+  isDefault   Boolean  @default(false)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  account     ChartOfAccount @relation(fields: [accountId], references: [id])
+  
+  payments    Payment[]
+
+  @@index([companyId])
+  @@index([accountId])
+  @@map("bank_accounts")
+}
+
+// ============================================================================
+// MASTER DATA - Tax Rates
+// ============================================================================
+
+model TaxRate {
+  id          String   @id @default(uuid())
+  companyId   String
+  name        String   // e.g., "PPN 11%"
+  taxType     String   // TaxType enum: PPN, PPH_21, PPH_23, etc.
+  rate        Decimal  @db.Decimal(5, 2) // Percentage
+  accountId   String   // Link to Chart of Account for tax payable/receivable
+  
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  account     ChartOfAccount @relation(fields: [accountId], references: [id])
+  
+  products    Product[]
+  invoiceItems InvoiceItem[]
+
+  @@index([companyId])
+  @@map("tax_rates")
+}
+
+// ============================================================================
+// GENERAL LEDGER - Journals
+// ============================================================================
+
+model Journal {
+  id          String   @id @default(uuid())
+  companyId   String
+  journalNo   String   // Auto-generated: JRN-YYYYMMDD-XXXX
+  date        DateTime
+  referenceNo String?
+  description String
+  
+  // Source tracking
+  sourceType  String?  // SALES_INVOICE, PURCHASE_INVOICE, PAYMENT, MANUAL, etc.
+  sourceId    String?  // ID of the source document
+  
+  status      String   @default("DRAFT") // JournalStatus enum: DRAFT, POSTED, VOID
+  postedAt    DateTime?
+  
+  totalDebit  Decimal  @default(0) @db.Decimal(19, 4)
+  totalCredit Decimal  @default(0) @db.Decimal(19, 4)
+  
+  createdById String?
+  updatedById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdBy   User?    @relation("CreatedBy", fields: [createdById], references: [id])
+  updatedBy   User?    @relation("UpdatedBy", fields: [updatedById], references: [id])
+  
+  entries     JournalEntry[]
+
+  @@unique([companyId, journalNo])
+  @@index([companyId])
+  @@index([date])
+  @@index([status])
+  @@index([sourceType, sourceId])
+  @@map("journals")
+}
+
+model JournalEntry {
+  id          String   @id @default(uuid())
+  journalId   String
+  accountId   String
+  debit       Decimal  @default(0) @db.Decimal(19, 4)
+  credit      Decimal  @default(0) @db.Decimal(19, 4)
+  description String?
+  
+  departmentId String?
+  
+  createdAt   DateTime @default(now())
+
+  journal     Journal  @relation(fields: [journalId], references: [id], onDelete: Cascade)
+  account     ChartOfAccount @relation(fields: [accountId], references: [id])
+
+  @@index([journalId])
+  @@index([accountId])
+  @@map("journal_entries")
+}
+
+// ============================================================================
+// TRANSACTIONS - Invoices (Sales & Purchase)
+// ============================================================================
+
+model Invoice {
+  id          String   @id @default(uuid())
+  companyId   String
+  invoiceNo   String   // Auto-generated
+  type        String   // InvoiceType enum: SALES, PURCHASE
+  
+  contactId   String
+  date        DateTime
+  dueDate     DateTime
+  
+  referenceNo String?
+  description String?
+  
+  // Amounts
+  subtotal    Decimal  @default(0) @db.Decimal(19, 4)
+  taxAmount   Decimal  @default(0) @db.Decimal(19, 4)
+  discountAmount Decimal @default(0) @db.Decimal(19, 4)
+  total       Decimal  @default(0) @db.Decimal(19, 4)
+  paidAmount  Decimal  @default(0) @db.Decimal(19, 4)
+  
+  status      String   @default("DRAFT") // InvoiceStatus enum
+  
+  journalId   String?  // Link to generated journal
+  
+  notes       String?
+  terms       String?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  contact     Contact  @relation("ContactInvoices", fields: [contactId], references: [id])
+  
+  items       InvoiceItem[]
+  payments    PaymentAllocation[]
+
+  @@unique([companyId, invoiceNo])
+  @@index([companyId])
+  @@index([contactId])
+  @@index([type])
+  @@index([status])
+  @@index([date])
+  @@index([dueDate])
+  @@map("invoices")
+}
+
+model InvoiceItem {
+  id          String   @id @default(uuid())
+  invoiceId   String
+  productId   String
+  description String?
+  
+  quantity    Decimal  @db.Decimal(19, 4)
+  unitPrice   Decimal  @db.Decimal(19, 4)
+  
+  // Tax
+  taxRateId   String?
+  taxAmount   Decimal  @default(0) @db.Decimal(19, 4)
+  
+  discountPercent Decimal @default(0) @db.Decimal(5, 2)
+  discountAmount Decimal @default(0) @db.Decimal(19, 4)
+  
+  subtotal    Decimal  @db.Decimal(19, 4)
+  total       Decimal  @db.Decimal(19, 4)
+  
+  createdAt   DateTime @default(now())
+
+  invoice     Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  product     Product  @relation(fields: [productId], references: [id])
+  taxRate     TaxRate? @relation(fields: [taxRateId], references: [id])
+
+  @@index([invoiceId])
+  @@index([productId])
+  @@map("invoice_items")
+}
+
+// ============================================================================
+// TRANSACTIONS - Payments
+// ============================================================================
+
+model Payment {
+  id          String   @id @default(uuid())
+  companyId   String
+  paymentNo   String   // Auto-generated
+  type        String   // RECEIVE (AR), PAY (AP)
+  
+  contactId   String
+  bankAccountId String
+  
+  date        DateTime
+  amount      Decimal  @db.Decimal(19, 4)
+  
+  paymentMethod String  // PaymentMethod enum
+  referenceNo String?
+  description String?
+  
+  status      String   @default("COMPLETED") // PaymentStatus enum
+  
+  journalId   String?  // Link to generated journal
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  contact     Contact  @relation(fields: [contactId], references: [id])
+  bankAccount BankAccount @relation(fields: [bankAccountId], references: [id])
+  
+  allocations PaymentAllocation[]
+
+  @@unique([companyId, paymentNo])
+  @@index([companyId])
+  @@index([contactId])
+  @@index([type])
+  @@index([date])
+  @@map("payments")
+}
+
+model PaymentAllocation {
+  id          String   @id @default(uuid())
+  paymentId   String
+  invoiceId   String
+  amount      Decimal  @db.Decimal(19, 4)
+  
+  createdAt   DateTime @default(now())
+
+  payment     Payment  @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  invoice     Invoice  @relation(fields: [invoiceId], references: [id])
+
+  @@index([paymentId])
+  @@index([invoiceId])
+  @@map("payment_allocations")
+}
+
+// ============================================================================
+// INVENTORY - Stock Management
+// ============================================================================
+
+model InventoryItem {
+  id          String   @id @default(uuid())
+  companyId   String
+  productId   String
+  warehouseId String   @default("default")
+  
+  quantity    Decimal  @default(0) @db.Decimal(19, 4)
+  value       Decimal  @default(0) @db.Decimal(19, 4) // Total value
+  averageCost Decimal  @default(0) @db.Decimal(19, 4) // For AVERAGE method
+  
+  updatedAt   DateTime @updatedAt
+
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  product     Product  @relation(fields: [productId], references: [id])
+
+  @@unique([companyId, productId, warehouseId])
+  @@index([companyId])
+  @@index([productId])
+  @@map("inventory_items")
+}
+
+model StockMovement {
+  id          String   @id @default(uuid())
+  companyId   String
+  productId   String
+  warehouseId String   @default("default")
+  
+  movementType String  // StockMovementType enum
+  quantity    Decimal  @db.Decimal(19, 4)
+  unitCost    Decimal  @default(0) @db.Decimal(19, 4)
+  totalCost   Decimal  @default(0) @db.Decimal(19, 4)
+  
+  date        DateTime
+  referenceNo String?
+  referenceType String? // INVOICE, PURCHASE, ADJUSTMENT, etc.
+  referenceId String?
+  
+  notes       String?
+  createdAt   DateTime @default(now())
+
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  product     Product  @relation(fields: [productId], references: [id])
+
+  @@index([companyId])
+  @@index([productId])
+  @@index([date])
+  @@index([referenceType, referenceId])
+  @@map("stock_movements")
+}
+
+// ============================================================================
+// FIXED ASSETS
+// ============================================================================
+
+model FixedAsset {
+  id          String   @id @default(uuid())
+  companyId   String
+  assetNo     String   // Auto-generated
+  name        String
+  description String?
+  category    String   // Building, Vehicle, Equipment, etc.
+  
+  purchaseDate DateTime
+  purchasePrice Decimal @db.Decimal(19, 4)
+  residualValue Decimal @default(0) @db.Decimal(19, 4)
+  usefulLife  Int      // In months
+  
+  depreciationMethod String @default("STRAIGHT_LINE") // DepreciationMethod enum
+  
+  // Accounting
+  assetAccountId String
+  depreciationExpenseAccountId String
+  accumulatedDepreciationAccountId String
+  
+  // Current values
+  accumulatedDepreciation Decimal @default(0) @db.Decimal(19, 4)
+  bookValue   Decimal  @db.Decimal(19, 4)
+  
+  // Status
+  status      String   @default("ACTIVE") // ACTIVE, DISPOSED, SOLD
+  disposalDate DateTime?
+  disposalAmount Decimal? @db.Decimal(19, 4)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  assetAccount ChartOfAccount @relation("FixedAssetAccount", fields: [assetAccountId], references: [id])
+  depreciationExpenseAccount ChartOfAccount @relation("DepreciationExpenseAccount", fields: [depreciationExpenseAccountId], references: [id])
+  accumulatedDepreciationAccount ChartOfAccount @relation("AccumulatedDepreciationAccount", fields: [accumulatedDepreciationAccountId], references: [id])
+  
+  depreciations Depreciation[]
+
+  @@unique([companyId, assetNo])
+  @@index([companyId])
+  @@index([status])
+  @@map("fixed_assets")
+}
+
+model Depreciation {
+  id          String   @id @default(uuid())
+  assetId     String
+  period      DateTime // Month/Year
+  amount      Decimal  @db.Decimal(19, 4)
+  
+  journalId   String?  // Link to generated journal
+  
+  createdAt   DateTime @default(now())
+
+  asset       FixedAsset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  @@unique([assetId, period])
+  @@index([assetId])
+  @@index([period])
+  @@map("depreciations")
+}
+
+// ============================================================================
+// ACCOUNTING PERIOD
+// ============================================================================
+
+model AccountingPeriod {
+  id          String   @id @default(uuid())
+  companyId   String
+  year        Int
+  month       Int      // 1-12
+  
+  startDate   DateTime
+  endDate     DateTime
+  
+  status      String   @default("OPEN") // PeriodStatus enum: OPEN, CLOSED, LOCKED
+  closedAt    DateTime?
+  closedBy    String?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, year, month])
+  @@index([companyId])
+  @@index([status])
+  @@map("accounting_periods")
+}
+
+// ============================================================================
+// ADDITIONAL MODELS (Budgets, etc.)
+// ============================================================================
+
+model Budget {
+  id          String   @id @default(uuid())
+  companyId   String
+  accountId   String
+  year        Int
+  month       Int?     // null for annual budget
+  
+  amount      Decimal  @db.Decimal(19, 4)
+  notes       String?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, accountId, year, month])
+  @@index([companyId])
+  @@index([year, month])
+  @@map("budgets")
+}
+
+model RecurringTransaction {
+  id          String   @id @default(uuid())
+  companyId   String
+  name        String
+  description String?
+  
+  frequency   String   // MONTHLY, QUARTERLY, YEARLY
+  startDate   DateTime
+  endDate     DateTime?
+  nextRunDate DateTime
+  
+  journalTemplate Json // Template for journal entries
+  
+  isActive    Boolean  @default(true)
+  lastRunAt   DateTime?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([nextRunDate])
+  @@map("recurring_transactions")
+}
+
