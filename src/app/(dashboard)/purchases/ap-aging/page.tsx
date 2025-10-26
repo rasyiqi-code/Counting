@@ -5,18 +5,23 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { trpc } from '@/lib/trpc/client';
 import { formatCurrency } from '@/shared/utils/currency';
 import { formatDate } from '@/shared/utils/date';
+import { AnimatedGradientText } from '@/components/ui/animated-gradient-text';
+import { BorderBeam } from '@/components/ui/border-beam';
 
 export default function APAgingPage() {
   const { data: apAging, isLoading } = trpc.purchases.reports.apAging.useQuery({});
 
   return (
-    <div className="p-8">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold">AP Aging Report</h1>
-        <p className="text-muted-foreground">Laporan Umur Utang</p>
+    <div className="w-full p-4 sm:p-6 lg:p-8">
+      <div className="mb-6 sm:mb-8">
+        <AnimatedGradientText className="text-2xl sm:text-3xl font-bold mb-2">
+          AP Aging Report
+        </AnimatedGradientText>
+        <p className="text-sm sm:text-base text-muted-foreground">Laporan Umur Utang</p>
       </div>
 
-      <Card className="mb-6">
+      <Card className="mb-6 relative overflow-hidden">
+        <BorderBeam size={300} duration={15} />
         <CardHeader>
           <CardTitle>Summary</CardTitle>
         </CardHeader>
@@ -55,7 +60,8 @@ export default function APAgingPage() {
       </Card>
 
       {apAging && apAging.bills && (
-        <Card>
+        <Card className="relative overflow-hidden">
+          <BorderBeam size={300} duration={15} delay={3} />
           <CardHeader>
             <CardTitle>Detail Utang</CardTitle>
           </CardHeader>
