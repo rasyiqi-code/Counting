@@ -65,8 +65,8 @@ export default function DashboardLayout({
         </main>
       </div>
       
-      {/* Floating AI Button */}
-      <FloatingAIButton />
+          {/* Floating AI Button */}
+          <FloatingAIButton />
     </div>
   );
 }

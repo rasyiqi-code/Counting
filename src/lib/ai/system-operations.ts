@@ -211,10 +211,12 @@ export class AISystemOperations {
         const journalEntry = await prisma.journal.create({
           data: {
             companyId: context.companyId,
+            journalNo: `SALES-${Date.now()}`,
             date: new Date(data.date),
             description: data.description || `Penjualan ke ${data.customerName}`,
-            reference: data.reference,
-            totalAmount: data.total,
+            referenceNo: data.reference,
+            totalDebit: data.total,
+            totalCredit: data.total,
             status: 'POSTED',
             entries: {
               create: journalEntries
@@ -254,10 +256,12 @@ export class AISystemOperations {
         const journalEntry = await prisma.journal.create({
           data: {
             companyId: context.companyId,
+            journalNo: `PURCHASE-${Date.now()}`,
             date: new Date(data.date),
             description: data.description || `Pembelian dari ${data.vendorName}`,
-            reference: data.reference,
-            totalAmount: data.total,
+            referenceNo: data.reference,
+            totalDebit: data.total,
+            totalCredit: data.total,
             status: 'POSTED',
             entries: {
               create: journalEntries
@@ -299,10 +303,12 @@ export class AISystemOperations {
         const journalEntry = await prisma.journal.create({
           data: {
             companyId: context.companyId,
+            journalNo: `INVENTORY-${Date.now()}`,
             date: new Date(data.date),
             description: data.description || `Inventory adjustment untuk ${data.productName}`,
-            reference: data.reference,
-            totalAmount: data.quantity * data.unitCost,
+            referenceNo: data.reference,
+            totalDebit: data.quantity * data.unitCost,
+            totalCredit: data.quantity * data.unitCost,
             status: 'POSTED',
             entries: {
               create: journalEntries

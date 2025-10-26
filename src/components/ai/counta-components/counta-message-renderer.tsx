@@ -2,6 +2,8 @@
 
 import React from 'react';
 import { CountaMessage, CountaComponent } from './types';
+import { AIComponentBuilder, AIResponseParser } from './component-builder';
+import { ActionHandler, ActionContext } from './action-handler';
 import { CountaCard } from './card-components';
 import { CountaTable } from './table-components';
 import { CountaStatus } from './status-components';
@@ -11,13 +13,49 @@ interface CountaMessageRendererProps {
   message: CountaMessage;
   onAction?: (actionId: string, action: string, data?: any) => void;
   onCellEdit?: (rowId: string, field: string, value: any) => void;
+  context?: ActionContext;
 }
 
 export function CountaMessageRenderer({ 
   message, 
   onAction, 
-  onCellEdit 
+  onCellEdit,
+  context
 }: CountaMessageRendererProps) {
+  const handleAction = async (actionId: string, action: string, data?: any) => {
+    // Enhanced action handling with context
+    if (context) {
+      try {
+        const result = await ActionHandler.executeAction(actionId, data || {}, context);
+        
+        if (result.success) {
+          console.log('Action executed successfully:', result.message);
+          // Emit success event
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('ai-action-success', {
+              detail: { actionId, result }
+            }));
+          }
+        } else {
+          console.error('Action failed:', result.error);
+          // Emit error event
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('ai-action-error', {
+              detail: { actionId, error: result.error }
+            }));
+          }
+        }
+      } catch (error) {
+        console.error('Action execution error:', error);
+      }
+    }
+    
+    // Call original onAction if provided
+    if (onAction) {
+      onAction(actionId, action, data);
+    }
+  };
+
   const renderComponent = (component: CountaComponent, index: number) => {
     switch (component.type) {
       case 'text':
@@ -76,7 +114,7 @@ export function CountaMessageRenderer({
                   {(component as any).actions?.map((action: any) => (
                     <button
                       key={action.id}
-                      onClick={() => onAction?.(action.id, action.action)}
+                      onClick={() => handleAction(action.id, action.action)}
                       className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
                         action.variant === 'primary'
                           ? 'bg-blue-600 text-white hover:bg-blue-700'
@@ -165,7 +203,7 @@ export function CountaMessageRenderer({
                       {component.actions.map((action) => (
                         <button
                           key={action.id}
-                          onClick={() => onAction?.(action.id, action.action)}
+                          onClick={() => handleAction(action.id, action.action)}
                           className="px-3 py-1 text-xs bg-white border border-gray-300 rounded hover:bg-gray-50"
                         >
                           {action.label}

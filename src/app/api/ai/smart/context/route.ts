@@ -4,19 +4,19 @@ import { AISystemOperations } from '@/lib/ai/system-operations';
 
 export async function POST(request: NextRequest) {
   try {
-    const { companyId, module } = await request.json();
+    const { companyId, module = 'general' } = await request.json();
 
-    if (!companyId || !module) {
+    if (!companyId) {
       return NextResponse.json(
-        { error: 'Company ID and module are required' },
+        { error: 'Company ID is required' },
         { status: 400 }
       );
     }
 
     console.log('Loading system context for:', { companyId, module });
 
-    // Get database context
-    const databaseContext = await AIDatabaseContext.getModuleSpecificContext(companyId, module);
+    // Get database context - use full context instead of module-specific
+    const databaseContext = await AIDatabaseContext.getContext(companyId);
     
     // Get system operations
     const systemOperations = AISystemOperations.getOperationsByModule(module);

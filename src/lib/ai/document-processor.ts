@@ -192,7 +192,7 @@ export class AIDocumentProcessor {
     if (type === 'receipt' && extractedData.customer) {
       suggestions.push('Dokumen ini sepertinya receipt penjualan. Apakah ingin membuat Sales Invoice?');
     }
-
+    
     return {
       type,
       confidence: Math.min(confidence, 1),
@@ -329,7 +329,7 @@ export class AIDocumentProcessor {
     let data: any = {};
 
     switch (documentResult.type) {
-      case 'invoice':
+        case 'invoice':
         if (documentResult.extractedData.vendor) {
           operation = 'create_purchase_bill';
           data = {
@@ -343,9 +343,9 @@ export class AIDocumentProcessor {
           };
           suggestions.push('Dokumen ini akan diproses sebagai Purchase Bill');
         }
-        break;
-
-      case 'receipt':
+          break;
+          
+        case 'receipt':
         if (documentResult.extractedData.customer) {
           operation = 'create_sales_invoice';
           data = {
@@ -359,9 +359,9 @@ export class AIDocumentProcessor {
           };
           suggestions.push('Dokumen ini akan diproses sebagai Sales Invoice');
         }
-        break;
-
-      case 'bill':
+          break;
+          
+        case 'bill':
         operation = 'create_purchase_bill';
         data = {
           vendorName: documentResult.extractedData.vendor || 'Unknown Vendor',
@@ -385,13 +385,13 @@ export class AIDocumentProcessor {
           type: 'PAYMENT'
         };
         suggestions.push('Dokumen ini akan diproses sebagai Payment');
-        break;
+          break;
 
       default:
         suggestions.push('Tipe dokumen tidak dikenali. Silakan pilih operasi manual.');
-    }
-
-    return {
+      }
+      
+      return {
       operation,
       data,
       suggestions

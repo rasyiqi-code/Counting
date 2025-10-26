@@ -14,13 +14,52 @@ import {
   ChevronDown,
   Upload,
   FileText,
-  Image
+  Image,
+  TrendingUp,
+  DollarSign
 } from 'lucide-react';
 import { useChat } from '@ai-sdk/react';
-import { CountaMessageRenderer, createCountaMessage, createContextualResponse } from './counta-components/counta-message-renderer';
-import { CountaMessage, CountaComponent } from './counta-components/types';
+// Using streamlined approach instead of counta-components
 import { FileUpload } from './file-upload';
 // Database context and system operations are now loaded via API
+
+// Streamlined components
+const DataCard = ({ title, data, icon: Icon }: { title: string; data: any; icon: any }) => (
+  <Card className="border-l-4 border-l-blue-500 mt-3">
+    <CardHeader className="pb-2">
+      <CardTitle className="text-sm flex items-center gap-2">
+        <Icon className="h-4 w-4" />
+        {title}
+      </CardTitle>
+    </CardHeader>
+    <CardContent className="pt-0">
+      <div className="space-y-1 text-sm">
+        {Object.entries(data).map(([key, value]) => (
+          <div key={key} className="flex justify-between">
+            <span className="text-gray-600 capitalize">{key}:</span>
+            <span className="font-medium">{String(value)}</span>
+          </div>
+        ))}
+      </div>
+    </CardContent>
+  </Card>
+);
+
+const ActionButtons = ({ actions, onAction }: { actions: any[]; onAction: (action: any) => void }) => (
+  <div className="flex flex-wrap gap-2 mt-3">
+    {actions.map((action, index) => (
+      <Button
+        key={index}
+        variant="outline"
+        size="sm"
+        onClick={() => onAction(action)}
+        className="text-xs"
+      >
+        {action.label}
+      </Button>
+    ))}
+  </div>
+);
 
 interface SmartChatAISDKProps {
   isOpen: boolean;
@@ -32,7 +71,6 @@ interface ChatMessage {
   id: string;
   role: 'user' | 'assistant';
   content: string;
-  countaMessage?: CountaMessage;
 }
 
 // Format markdown to HTML
@@ -57,6 +95,72 @@ const formatMarkdown = (text: string) => {
 };
 
 export function SmartChatAISDK({ isOpen, onClose, currentModule = 'general' }: SmartChatAISDKProps) {
+  // Streamlined message content renderer
+  const renderMessageContent = (content: string) => {
+    try {
+      // Check if content contains structured data markers
+      if (content.includes('[DATA:') && content.includes('[/DATA]')) {
+        const dataMatch = content.match(/\[DATA:([\s\S]*?)\[\/DATA\]/);
+        if (dataMatch) {
+          const data = JSON.parse(dataMatch[1]);
+          return (
+            <div className="space-y-3">
+              <div className="text-sm whitespace-pre-wrap">
+                {content.replace(/\[DATA:[\s\S]*?\[\/DATA\]/, '').trim()}
+              </div>
+              <DataCard title="Data Analysis" data={data} icon={TrendingUp} />
+            </div>
+          );
+        }
+      }
+
+      // Check for action buttons
+      if (content.includes('[ACTIONS:') && content.includes('[/ACTIONS]')) {
+        const actionsMatch = content.match(/\[ACTIONS:([\s\S]*?)\[\/ACTIONS\]/);
+        if (actionsMatch) {
+          const actions = JSON.parse(actionsMatch[1]);
+          return (
+            <div className="space-y-3">
+              <div className="text-sm whitespace-pre-wrap">
+                {content.replace(/\[ACTIONS:[\s\S]*?\[\/ACTIONS\]/, '').trim()}
+              </div>
+              <ActionButtons actions={actions} onAction={handleAction} />
+            </div>
+          );
+        }
+      }
+
+      // Check for financial data
+      if (content.includes('[FINANCIAL:') && content.includes('[/FINANCIAL]')) {
+        const financialMatch = content.match(/\[FINANCIAL:([\s\S]*?)\[\/FINANCIAL\]/);
+        if (financialMatch) {
+          const financialData = JSON.parse(financialMatch[1]);
+          return (
+            <div className="space-y-3">
+              <div className="text-sm whitespace-pre-wrap">
+                {content.replace(/\[FINANCIAL:[\s\S]*?\[\/FINANCIAL\]/, '').trim()}
+              </div>
+              <DataCard title="Financial Analysis" data={financialData} icon={DollarSign} />
+            </div>
+          );
+        }
+      }
+
+      // Regular text content
+      return <div className="text-sm whitespace-pre-wrap">{content}</div>;
+    } catch (error) {
+      // Fallback to regular text
+      return <div className="text-sm whitespace-pre-wrap">{content}</div>;
+    }
+  };
+
+  const handleAction = (action: any) => {
+    console.log('Action clicked:', action);
+    // Handle actions here - bisa integrate dengan system operations
+    if (action.type === 'execute_operation') {
+      executeSystemOperation(action.operation, action.data);
+    }
+  };
   const [isHovered, setIsHovered] = useState(false);
   const [inputValue, setInputValue] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>([
@@ -191,72 +295,17 @@ Apa yang bisa saya bantu hari ini?`,
                 if (parsed.content) {
                   let content = parsed.content;
                   
-                  // Check if content contains COUNTA-COMPONENT tags
-                  const componentRegex = /\[COUNTA-COMPONENT:(\{[\s\S]*?\})\]/g;
-                  if (componentRegex.test(content)) {
-                    // Extract Counta components from content
-                    const components: any[] = [];
-                    let match;
-                    
-                    // Reset regex
-                    componentRegex.lastIndex = 0;
-                    
-                    while ((match = componentRegex.exec(content)) !== null) {
-                      try {
-                        const component = JSON.parse(match[1]);
-                        components.push(component);
-                        // Remove the component tag from content
-                        content = content.replace(match[0], '');
-                      } catch (e) {
-                        console.error('Error parsing Counta component:', e);
-                      }
-                    }
-                    
-                    // Update message with cleaned content and components
-                    setMessages(prev => {
-                      const updatedMessages = prev.map(msg => {
-                        if (msg.id === aiMessage.id) {
-                          let newContent = msg.content + content;
-                          let countaMessage = msg.countaMessage;
-                          
-                          // Merge with existing components
-                          if (components.length > 0) {
-                            const existingComponents = countaMessage?.components || [];
-                            const mergedComponents = createCountaMessage([...existingComponents, ...components] as any);
-                            if (mergedComponents) {
-                              countaMessage = mergedComponents;
-                            }
-                          }
-                          
-                          return { ...msg, content: newContent, countaMessage };
-                        }
-                        return msg;
-                      });
-                      return updatedMessages;
-                    });
-                  } else {
-                    // No components, just update content
-                    setMessages(prev => 
-                      prev.map(msg => 
-                        msg.id === aiMessage.id 
-                          ? { ...msg, content: msg.content + parsed.content }
-                          : msg
-                      )
-                    );
-                  }
-                }
-                
-                // Check for Counta components in separate field
-                if (parsed.countaComponents && Array.isArray(parsed.countaComponents)) {
-                  const countaMessage = createCountaMessage(parsed.countaComponents);
+                  // Update message content (streamlined approach)
                   setMessages(prev => 
                     prev.map(msg => 
                       msg.id === aiMessage.id 
-                        ? { ...msg, countaMessage }
+                        ? { ...msg, content: msg.content + parsed.content }
                         : msg
                     )
                   );
                 }
+                
+                // Streamlined approach - no separate component handling needed
               } catch (e) {
                 console.log('JSON parse error:', e, 'for data:', data);
               }
@@ -417,23 +466,9 @@ ${result.accountingOperation.operation ?
           const operationMessage: ChatMessage = {
             id: (Date.now() + 1).toString(),
             role: 'assistant',
-            content: `Apakah Anda ingin menjalankan operasi "${result.accountingOperation.operation}" dengan data yang diekstrak?`,
-            countaMessage: {
-              id: (Date.now() + 2).toString(),
-              type: 'ai',
-              timestamp: new Date(),
-              components: [{
-                type: 'action',
-                variant: 'context-aware',
-                title: 'Operasi yang Tersedia',
-                actions: [{
-                  id: 'execute-operation',
-                  label: 'Jalankan Operasi',
-                  action: 'execute_operation',
-                  variant: 'primary'
-                }]
-              }]
-            }
+            content: `Apakah Anda ingin menjalankan operasi "${result.accountingOperation.operation}" dengan data yang diekstrak?
+
+[ACTIONS:[{"label":"Jalankan Operasi","type":"execute_operation","operation":"${result.accountingOperation.operation}","data":${JSON.stringify(result.accountingOperation.data)}}][/ACTIONS]`
           };
 
           setMessages(prev => [...prev, operationMessage]);
@@ -482,6 +517,8 @@ ${error instanceof Error ? error.message : 'Unknown error'}`
       try {
         const companyId = 'default-company-id';
         
+        console.log('🔄 Loading system context...');
+        
         // Load database context via API
         const response = await fetch('/api/ai/smart/context', {
           method: 'POST',
@@ -490,19 +527,25 @@ ${error instanceof Error ? error.message : 'Unknown error'}`
           },
           body: JSON.stringify({
             companyId,
-            module: currentModule
+            module: currentModule || 'general'
           }),
         });
 
         if (response.ok) {
           const data = await response.json();
-          setDatabaseContext(data.databaseContext);
-          setSystemOperations(data.systemOperations);
           
-          console.log('✅ Database context loaded:', data.databaseContext);
-          console.log('✅ System operations loaded:', data.systemOperations);
+          if (data.success) {
+            setDatabaseContext(data.databaseContext);
+            setSystemOperations(data.systemOperations);
+            
+            console.log('✅ Database context loaded:', data.databaseContext);
+            console.log('✅ System operations loaded:', data.systemOperations);
+          } else {
+            console.error('❌ API returned error:', data.error);
+          }
         } else {
-          console.error('❌ Failed to load system context');
+          const errorData = await response.json().catch(() => ({}));
+          console.error('❌ Failed to load system context:', response.status, errorData);
         }
       } catch (error) {
         console.error('❌ Error loading system context:', error);
@@ -818,71 +861,17 @@ ${error instanceof Error ? error.message : 'Unknown error'}`
                   >
                     {/* Message Content */}
                     <div className="px-4 py-3">
-                      {message.countaMessage ? (
-                        <CountaMessageRenderer 
-                          message={message.countaMessage}
-                          onAction={(actionId, action, data) => {
-                            console.log('Counta action:', { actionId, action, data });
-                            
-                            // Handle execute_operation action
-                            if (actionId === 'execute-operation') {
-                              // Find the operation data from the message context
-                              const message = messages.find(msg => msg.countaMessage?.components?.some(comp => 
-                                comp.type === 'action' && comp.actions?.some(act => act.id === 'execute-operation')
-                              ));
-                              
-                              if (message) {
-                                // Extract operation from the message content
-                                const operationMatch = message.content.match(/operasi "([^"]+)"/);
-                                if (operationMatch) {
-                                  const operation = operationMatch[1];
-                                  // You would need to store the operation data somewhere accessible
-                                  // For now, we'll use a placeholder
-                                  executeSystemOperation(operation, {});
-                                }
-                              }
-                              return;
-                            }
-                            
-                            // Ensure action is defined and is a string
-                            const actionStr = String(action || '');
-                            
-                            // Parse AI-ACTION format
-                            if (actionStr && actionStr.startsWith('[AI-ACTION:')) {
-                              const match = actionStr.match(/\[AI-ACTION:(\w+):"?([^"]+)"?\]/);
-                              if (match) {
-                                const [, actionType, value] = match;
-                                if (actionType === 'navigate') {
-                                  window.location.href = value;
-                                }
-                              }
-                            } else {
-                              console.log('Action is not in AI-ACTION format:', actionStr);
-                            }
-                          }}
-                          onCellEdit={(rowId, field, value) => {
-                            console.log('Counta cell edit:', { rowId, field, value });
-                            // Handle cell edits here
-                          }}
-                        />
-                      ) : (
-                        <div className={`${
-                          message.role === 'user' 
-                            ? 'text-sm text-white whitespace-pre-wrap' 
-                            : 'text-sm text-gray-800 leading-relaxed prose prose-sm max-w-none'
-                        }`}>
-                          {message.role === 'assistant' ? (
-                            <div 
-                              className="markdown-content"
-                              dangerouslySetInnerHTML={{ 
-                                __html: formatMarkdown(message.content) 
-                              }} 
-                            />
-                          ) : (
-                            message.content
-                          )}
-                        </div>
-                      )}
+                      <div className={`${
+                        message.role === 'user' 
+                          ? 'text-sm text-white whitespace-pre-wrap' 
+                          : 'text-sm text-gray-800 leading-relaxed prose prose-sm max-w-none'
+                      }`}>
+                        {message.role === 'assistant' ? (
+                          renderMessageContent(message.content)
+                        ) : (
+                          message.content
+                        )}
+                      </div>
                     </div>
                     
                     {/* Timestamp */}
