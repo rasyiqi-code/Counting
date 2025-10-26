@@ -126,16 +126,32 @@ export function CountaCard({ component, onAction }: CardComponentProps) {
             <Badge className="bg-green-100 text-green-800">{component.data.cashFlow || 'Sehat'}</Badge>
           </div>
           
+          {component.data.cash_balance !== undefined && (
+            <div className="flex items-center justify-between p-2 bg-green-50 rounded-lg">
+              <div className="flex items-center gap-2">
+                <CheckCircle className="h-4 w-4 text-green-600" />
+                <span className="font-medium">Saldo Kas:</span>
+              </div>
+              <span className="text-green-700 font-semibold">
+                {new Intl.NumberFormat('id-ID', { 
+                  style: 'currency', 
+                  currency: 'IDR' 
+                }).format(component.data.cash_balance)}
+              </span>
+            </div>
+          )}
+          
           <div className="flex items-center justify-between p-2 bg-yellow-50 rounded-lg">
             <div className="flex items-center gap-2">
               <AlertTriangle className="h-4 w-4 text-yellow-600" />
               <span className="font-medium">{component.data.receivablesLabel || 'Piutang'}:</span>
             </div>
             <span className="text-yellow-700 font-semibold">
-              {component.data.receivablesFormatted || new Intl.NumberFormat('id-ID', { 
-                style: 'currency', 
-                currency: 'IDR' 
-              }).format(component.data.receivables)}
+              {component.data.receivablesFormatted || (component.data.receivables !== undefined ? 
+                new Intl.NumberFormat('id-ID', { 
+                  style: 'currency', 
+                  currency: 'IDR' 
+                }).format(component.data.receivables) : 'Rp0')}
             </span>
           </div>
           
@@ -145,7 +161,9 @@ export function CountaCard({ component, onAction }: CardComponentProps) {
               <span className="font-medium">{component.data.profitLabel || 'Profit'}:</span>
             </div>
             <span className="text-blue-700 font-semibold">
-              {component.data.profitFormatted || `${component.data.profit}% (↑${component.data.profitIncrease}% vs bulan lalu)`}
+              {component.data.profitFormatted || (component.data.profit !== undefined ? 
+                `${component.data.profit}% (↑${component.data.profitIncrease || 0}% vs bulan lalu)` : 
+                '0% (↑0% vs bulan lalu)')}
             </span>
           </div>
         </div>

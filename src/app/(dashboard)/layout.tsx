@@ -42,6 +42,7 @@ export default function DashboardLayout({
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
+
   return (
     <div className="grid grid-cols-[auto_1fr] h-screen overflow-hidden">
       <Sidebar 

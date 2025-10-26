@@ -1,6 +1,8 @@
 import { streamText } from 'ai';
 import { getDefaultProviderFromDB } from '@/lib/ai/config';
 import { createCountaMessage } from '@/components/ai/counta-components/counta-message-renderer';
+import { AISystemOperations } from '@/lib/ai/system-operations';
+import { AIDocumentProcessor } from '@/lib/ai/document-processor';
 
 export async function POST(req: Request) {
   try {
@@ -56,6 +58,203 @@ export async function POST(req: Request) {
       }
     }
 
+    // Check if user wants cash balance / saldo kas
+    if (userQuery.includes('saldo kas') || 
+        userQuery.includes('cash balance') || 
+        userQuery.includes('berapa kas') ||
+        userQuery.includes('laba bulan ini') ||
+        userQuery.includes('profit bulan ini')) {
+      try {
+        console.log('🔍 Analyzing cash and financial data...');
+        
+        // Get database context for analysis
+        const { AIDatabaseContext } = await import('@/lib/ai/database-context');
+        const dbContext = await AIDatabaseContext.getContext(companyId);
+        
+        // Calculate cash balance from cash accounts
+        const cashAccounts = dbContext.currentBalances.filter((account: any) => 
+          account.name?.toLowerCase().includes('kas') || 
+          account.name?.toLowerCase().includes('cash') ||
+          account.code?.startsWith('1-1-1') // Cash account code
+        );
+        
+        const totalCashBalance = cashAccounts.reduce((sum: number, account: any) => 
+          sum + (account.balance || 0), 0
+        );
+        
+        // Calculate receivables
+        const receivablesAccounts = dbContext.currentBalances.filter((account: any) => 
+          account.name?.toLowerCase().includes('piutang') || 
+          account.name?.toLowerCase().includes('receivable') ||
+          account.code?.startsWith('1-2-1') // Receivables account code
+        );
+        
+        const totalReceivables = receivablesAccounts.reduce((sum: number, account: any) => 
+          sum + (account.balance || 0), 0
+        );
+        
+        // Calculate profit (simplified - revenue - expenses)
+        const revenueAccounts = dbContext.currentBalances.filter((account: any) => 
+          account.accountType === 'REVENUE'
+        );
+        
+        const expenseAccounts = dbContext.currentBalances.filter((account: any) => 
+          account.accountType === 'EXPENSE'
+        );
+        
+        const totalRevenue = revenueAccounts.reduce((sum: number, account: any) => 
+          sum + (account.balance || 0), 0
+        );
+        
+        const totalExpenses = expenseAccounts.reduce((sum: number, account: any) => 
+          sum + (account.balance || 0), 0
+        );
+        
+        const netProfit = totalRevenue - totalExpenses;
+        const profitPercentage = totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0;
+        
+        contextualData = {
+          cash_balance: totalCashBalance,
+          receivables: totalReceivables,
+          profit: Math.round(profitPercentage),
+          profitIncrease: 0, // Would need historical data to calculate
+          totalRevenue,
+          totalExpenses,
+          netProfit,
+          analysis: {
+            cashAccounts: cashAccounts.length,
+            receivablesAccounts: receivablesAccounts.length,
+            revenueAccounts: revenueAccounts.length,
+            expenseAccounts: expenseAccounts.length
+          }
+        };
+        
+        console.log('✅ Analyzed financial data:', contextualData);
+      } catch (error) {
+        console.error('❌ Error analyzing financial data:', error);
+      }
+    }
+
+    // Initialize AI system operations
+    const systemOps = AISystemOperations;
+    const documentProcessor = AIDocumentProcessor;
+    
+    // Get system context for AI with comprehensive analysis
+    let systemContext = null;
+    let comprehensiveAnalysis = null;
+    
+    try {
+      console.log('🔍 Performing comprehensive data analysis...');
+      const { AIDatabaseContext } = await import('@/lib/ai/database-context');
+      const contextResult = await AIDatabaseContext.getContext(companyId);
+      
+      if (contextResult) {
+        // Perform comprehensive financial analysis
+        const cashAccounts = contextResult.currentBalances.filter((account: any) => 
+          account.name?.toLowerCase().includes('kas') || 
+          account.name?.toLowerCase().includes('cash') ||
+          account.code?.startsWith('1-1-1')
+        );
+        
+        const receivablesAccounts = contextResult.currentBalances.filter((account: any) => 
+          account.name?.toLowerCase().includes('piutang') || 
+          account.name?.toLowerCase().includes('receivable') ||
+          account.code?.startsWith('1-2-1')
+        );
+        
+        const revenueAccounts = contextResult.currentBalances.filter((account: any) => 
+          account.accountType === 'REVENUE'
+        );
+        
+        const expenseAccounts = contextResult.currentBalances.filter((account: any) => 
+          account.accountType === 'EXPENSE'
+        );
+        
+        const assetAccounts = contextResult.currentBalances.filter((account: any) => 
+          account.accountType === 'ASSET'
+        );
+        
+        const liabilityAccounts = contextResult.currentBalances.filter((account: any) => 
+          account.accountType === 'LIABILITY'
+        );
+        
+        const totalCashBalance = cashAccounts.reduce((sum: number, account: any) => 
+          sum + (account.balance || 0), 0
+        );
+        
+        const totalReceivables = receivablesAccounts.reduce((sum: number, account: any) => 
+          sum + (account.balance || 0), 0
+        );
+        
+        const totalRevenue = revenueAccounts.reduce((sum: number, account: any) => 
+          sum + (account.balance || 0), 0
+        );
+        
+        const totalExpenses = expenseAccounts.reduce((sum: number, account: any) => 
+          sum + (account.balance || 0), 0
+        );
+        
+        const totalAssets = assetAccounts.reduce((sum: number, account: any) => 
+          sum + (account.balance || 0), 0
+        );
+        
+        const totalLiabilities = liabilityAccounts.reduce((sum: number, account: any) => 
+          sum + (account.balance || 0), 0
+        );
+        
+        const netProfit = totalRevenue - totalExpenses;
+        const profitPercentage = totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0;
+        
+        comprehensiveAnalysis = {
+          financial: {
+            cashBalance: totalCashBalance,
+            receivables: totalReceivables,
+            totalRevenue,
+            totalExpenses,
+            netProfit,
+            profitPercentage: Math.round(profitPercentage),
+            totalAssets,
+            totalLiabilities,
+            equity: totalAssets - totalLiabilities
+          },
+          accounts: {
+            cashAccounts: cashAccounts.length,
+            receivablesAccounts: receivablesAccounts.length,
+            revenueAccounts: revenueAccounts.length,
+            expenseAccounts: expenseAccounts.length,
+            assetAccounts: assetAccounts.length,
+            liabilityAccounts: liabilityAccounts.length
+          },
+          transactions: {
+            totalTransactions: contextResult.recentTransactions.length,
+            recentTransactions: contextResult.recentTransactions.slice(0, 5)
+          }
+        };
+        
+        systemContext = {
+          dataStatus: {
+            hasCOA: contextResult.coa.length > 0,
+            hasCustomers: contextResult.customers.length > 0,
+            hasVendors: contextResult.vendors.length > 0,
+            hasProducts: contextResult.products.length > 0,
+            hasTransactions: contextResult.recentTransactions.length > 0
+          },
+          businessMetrics: {
+            netIncome: netProfit,
+            totalRevenue,
+            totalExpenses,
+            cashBalance: totalCashBalance,
+            receivables: totalReceivables
+          },
+          recommendations: []
+        };
+        
+        console.log('✅ Comprehensive analysis completed:', comprehensiveAnalysis);
+      }
+    } catch (error) {
+      console.error('Error getting system context:', error);
+    }
+
     const provider = await getDefaultProviderFromDB(companyId);
     console.log('Provider loaded:', provider);
     console.log('Messages:', messages);
@@ -63,14 +262,60 @@ export async function POST(req: Request) {
     const result = await streamText({
       model: provider,
       messages,
-      system: `Anda adalah Smart Assistant untuk aplikasi akuntansi Indonesia. Anda membantu user dengan:
-      - Panduan penggunaan fitur aplikasi
-      - Troubleshooting masalah teknis
-      - Best practices akuntansi Indonesia
-      - Workflow optimization
-      - PSAK compliance guidance
-      - Data analysis dan reporting
-      - AI-powered form filling dan data input
+      system: `Anda adalah Smart Assistant untuk aplikasi akuntansi Indonesia yang TERINTEGRASI dengan database dan business logic. Anda memiliki akses ke:
+
+      🔗 **FITUR TERINTEGRASI:**
+      - Akses real-time ke database (COA, customers, vendors, products, transactions)
+      - Business logic dan validation rules
+      - System operations (create accounts, customers, vendors, products, journal entries)
+      - Document processing (invoice, receipt, bill, statement)
+      - PSAK compliance dan Indonesian tax rules
+      - Workflow automation dan smart suggestions
+      
+      📊 **SYSTEM CONTEXT TERSEDIA:**
+      ${systemContext ? `
+      - COA Status: ${systemContext.dataStatus.hasCOA ? '✅ Setup' : '❌ Belum setup'}
+      - Customers: ${systemContext.dataStatus.hasCustomers ? '✅ Ada' : '❌ Belum ada'}
+      - Vendors: ${systemContext.dataStatus.hasVendors ? '✅ Ada' : '❌ Belum ada'}
+      - Products: ${systemContext.dataStatus.hasProducts ? '✅ Ada' : '❌ Belum ada'}
+      - Transactions: ${systemContext.dataStatus.hasTransactions ? '✅ Ada' : '❌ Belum ada'}
+      - Net Income: Rp ${systemContext.businessMetrics?.netIncome?.toLocaleString('id-ID') || '0'}
+      - Cash Balance: Rp ${systemContext.businessMetrics?.cashBalance?.toLocaleString('id-ID') || '0'}
+      - Receivables: Rp ${systemContext.businessMetrics?.receivables?.toLocaleString('id-ID') || '0'}
+      ` : 'System context tidak tersedia'}
+      
+      📈 **ANALISIS DATA KOMPREHENSIF:**
+      ${comprehensiveAnalysis ? `
+      - Saldo Kas: Rp ${comprehensiveAnalysis.financial.cashBalance.toLocaleString('id-ID')}
+      - Piutang: Rp ${comprehensiveAnalysis.financial.receivables.toLocaleString('id-ID')}
+      - Total Pendapatan: Rp ${comprehensiveAnalysis.financial.totalRevenue.toLocaleString('id-ID')}
+      - Total Beban: Rp ${comprehensiveAnalysis.financial.totalExpenses.toLocaleString('id-ID')}
+      - Laba Bersih: Rp ${comprehensiveAnalysis.financial.netProfit.toLocaleString('id-ID')}
+      - Profit Margin: ${comprehensiveAnalysis.financial.profitPercentage}%
+      - Total Aset: Rp ${comprehensiveAnalysis.financial.totalAssets.toLocaleString('id-ID')}
+      - Total Kewajiban: Rp ${comprehensiveAnalysis.financial.totalLiabilities.toLocaleString('id-ID')}
+      - Ekuitas: Rp ${comprehensiveAnalysis.financial.equity.toLocaleString('id-ID')}
+      - Total Transaksi: ${comprehensiveAnalysis.transactions.totalTransactions}
+      ` : 'Analisis data tidak tersedia'}
+      
+      🎯 **KEMAMPUAN AI:**
+      - **Database Operations**: Create/update accounts, customers, vendors, products, journal entries
+      - **Document Processing**: Extract data dari invoice, receipt, bill, statement
+      - **Smart Validation**: Validasi data sesuai business rules dan PSAK
+      - **Workflow Automation**: Guide user melalui business processes
+      - **Real-time Data**: Akses data aktual dari database
+      - **Business Intelligence**: Analisis dan insights berdasarkan data nyata
+      
+      ⚠️ **WAJIB ANALISIS DATA SEBELUM RESPONSE:**
+      - SELALU gunakan data aktual dari analisis di atas
+      - JANGAN buat data dummy atau asumsi
+      - Jika user bertanya tentang keuangan, gunakan comprehensiveAnalysis.financial
+      - Jika user bertanya tentang transaksi, gunakan comprehensiveAnalysis.transactions
+      - Jika user bertanya tentang akun, gunakan comprehensiveAnalysis.accounts
+      - SELALU konfirmasi data yang digunakan dalam response
+      
+      📋 **REKOMENDASI SISTEM:**
+      ${systemContext?.recommendations && systemContext.recommendations.length > 0 ? systemContext.recommendations.map((rec: any) => `- ${rec.type === 'critical' ? '🚨' : rec.type === 'important' ? '⚠️' : '💡'} ${rec.message}`).join('\n') : 'Tidak ada rekomendasi'}
       
       User sedang menggunakan modul: ${module || 'general'}
       Konteks halaman: ${context?.currentPage || '/'}
@@ -78,9 +323,9 @@ export async function POST(req: Request) {
       
       ${contextualData ? `\n⚡ DATA AKTUAL TERSEDIA (GUNAKAN INI UNTUK RESPONSE!):\n${JSON.stringify(contextualData, null, 2)}\n\nPENTING: Jika user meminta data atau laporan, GUNAKAN DATA AKTUAL di atas untuk membuat TABLE dengan data nyata dari database! JANGAN gunakan data dummy!\n\nCONTOH PENGGUNAAN DATA AKTUAL:\n- Gunakan contextualData.revenue untuk baris pendapatan\n- Gunakan contextualData.expenses untuk baris beban\n- Gunakan contextualData.totalRevenue, contextualData.netIncome dll untuk total/summary\n- Semua angka HARUS dari data di atas, bukan buat sendiri!\n` : ''}
       
-      PENTING: ANALISIS USER QUERY DAN PILIH KOMPONEN YANG TEPAT!
+      ${comprehensiveAnalysis ? `\n🔍 ANALISIS DATA YANG TERSEDIA (GUNAKAN INI UNTUK RESPONSE!):\n${JSON.stringify(comprehensiveAnalysis, null, 2)}\n\nPENTING: Jika user bertanya tentang keuangan, GUNAKAN comprehensiveAnalysis.financial! JANGAN buat data dummy!\n\nCONTOH PENGGUNAAN ANALISIS:\n- comprehensiveAnalysis.financial.cashBalance untuk saldo kas\n- comprehensiveAnalysis.financial.receivables untuk piutang\n- comprehensiveAnalysis.financial.netProfit untuk laba bersih\n- comprehensiveAnalysis.financial.profitPercentage untuk margin profit\n- comprehensiveAnalysis.transactions.totalTransactions untuk jumlah transaksi\n- Semua angka HARUS dari analisis di atas, bukan buat sendiri!\n` : ''}
       
-      ATURAN PEMILIHAN KOMPONEN BERDASARKAN KONTEKS:
+      🎯 **ATURAN PEMILIHAN KOMPONEN BERDASARKAN KONTEKS:**
       
       1. **USER MINTA DATA/LAPORAN (TABEL/SPREADSHEET)** → GUNAKAN TABLE:
          Contoh query: "Generate laporan laba rugi", "Tampilkan penjualan bulan ini", "Lihat transaksi hari ini", "Show me revenue report"
@@ -88,8 +333,9 @@ export async function POST(req: Request) {
          ${contextualData ? `\n⚡ GUNAKAN DATA AKTUAL YANG TERSEDIA DI ATAS (contoh: contextualData.revenue untuk revenue lines, contextualData.expenses untuk expense lines)!` : ''}
       
       2. **USER MINTA RINGKASAN/SINGLE DATA POINT** → GUNAKAN CARD:
-         Contoh query: "Lihat profit bulan ini", "Summary transaksi", "Status keuangan", "Ringkasan penjualan"
-         → GUNAKAN: [COUNTA-COMPONENT:{"type":"card","cardType":"financial_health","title":"📊 [JUDUL]","data":{"status":"Sehat","receivables":0}}]
+         Contoh query: "Lihat profit bulan ini", "Summary transaksi", "Status keuangan", "Ringkasan penjualan", "Berapa saldo kas", "Laba bulan ini"
+         → GUNAKAN: [COUNTA-COMPONENT:{"type":"card","cardType":"financial_health","title":"📊 [JUDUL]","data":{"status":"Sehat","cash_balance":${comprehensiveAnalysis?.financial?.cashBalance || 0},"receivables":${comprehensiveAnalysis?.financial?.receivables || 0},"profit":${comprehensiveAnalysis?.financial?.profitPercentage || 0},"profitIncrease":0}}]
+         ${comprehensiveAnalysis ? `\n⚡ GUNAKAN DATA AKTUAL DARI ANALISIS: cash_balance=${comprehensiveAnalysis.financial.cashBalance}, receivables=${comprehensiveAnalysis.financial.receivables}, profit=${comprehensiveAnalysis.financial.profitPercentage}%` : ''}
       
       3. **USER MINTA INPUT DATA** → GUNAKAN FORM COMPONENT:
          Contoh query: "Input transaksi", "Buat invoice", "Tambah customer", "Catat pembayaran"
@@ -100,6 +346,17 @@ export async function POST(req: Request) {
          Contoh query: "Apa itu akuntansi?", "Bagaimana cara posting jurnal?", "Terima kasih", "Halo"
          → Jawab dengan text biasa
       
+      5. **USER UPLOAD DOKUMEN** → GUNAKAN DOCUMENT PROCESSOR:
+         Contoh query: "Upload invoice", "Scan receipt", "Process bill", "Extract data dari dokumen"
+         → Gunakan document processor untuk extract data dan buat form dengan data yang sudah diisi
+      
+      🚀 **FITUR LANJUTAN:**
+      - Jika user minta "buat akun baru", gunakan system operations untuk create account
+      - Jika user minta "tambah customer", gunakan system operations untuk create customer
+      - Jika user upload dokumen, gunakan document processor untuk extract data
+      - Jika user minta validasi, gunakan business logic untuk validate data
+      - Jika user minta workflow, gunakan business logic untuk get workflow steps
+      
       PENTING: JANGAN GUNAKAN ACTION_GROUP untuk navigasi! User bisa navigasi sendiri di aplikasi.
       
       CONTOH YANG BENAR:
@@ -108,6 +365,7 @@ export async function POST(req: Request) {
       - "Tampilkan semua transaksi" → TABLE  
       - "Input transaksi baru" → FORM
       - "Buat invoice" → FORM
+      - "Upload invoice" → DOCUMENT PROCESSOR + FORM
       - "Apa itu akuntansi?" → TEXT
       
       ANALISIS: Setiap query user itu berbeda, jadi pilih komponen yang match dengan maksud user!

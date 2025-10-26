@@ -11,11 +11,16 @@ import {
   Brain,
   Trash2,
   MessageSquare,
-  ChevronDown
+  ChevronDown,
+  Upload,
+  FileText,
+  Image
 } from 'lucide-react';
 import { useChat } from '@ai-sdk/react';
 import { CountaMessageRenderer, createCountaMessage, createContextualResponse } from './counta-components/counta-message-renderer';
 import { CountaMessage, CountaComponent } from './counta-components/types';
+import { FileUpload } from './file-upload';
+// Database context and system operations are now loaded via API
 
 interface SmartChatAISDKProps {
   isOpen: boolean;
@@ -58,20 +63,33 @@ export function SmartChatAISDK({ isOpen, onClose, currentModule = 'general' }: S
     {
       id: 'welcome',
       role: 'assistant',
-      content: `Halo! Saya Smart Assistant untuk aplikasi akuntansi Anda. Saya bisa membantu dengan:
+      content: `Halo! Saya Smart Assistant untuk aplikasi akuntansi Anda yang TERINTEGRASI dengan database dan business logic. Saya bisa membantu dengan:
 
 • **Saran workflow** untuk modul ${currentModule}
 • **Panduan penggunaan** fitur-fitur aplikasi
 • **Troubleshooting** masalah yang Anda hadapi
 • **Best practices** akuntansi Indonesia
 • **Analisis data** dan laporan keuangan
+• **Upload dokumen** - Upload invoice, receipt, bill, statement untuk ekstraksi data otomatis
+• **Database operations** - Create/update accounts, customers, vendors, products
+• **Smart validation** - Validasi data sesuai business rules dan PSAK
 ${currentModule === 'master-data' ? '• **Cleanup duplikat COA** - Hapus akun duplikat secara otomatis\n• **Validasi Chart of Accounts** - Pastikan struktur COA sesuai standar PSAK' : ''}
+
+🚀 **FITUR TERBARU:**
+- ✅ **Real-time database access** - Akses data aktual dari database
+- ✅ **Document processing AI** - Ekstraksi data otomatis dari dokumen
+- ✅ **System operations** - Execute operations langsung ke database
+- ✅ **Business logic integration** - Validasi sesuai PSAK
+- ✅ **Workflow automation** - Step-by-step guidance
 
 Apa yang bisa saya bantu hari ini?`,
     }
   ]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showFileUpload, setShowFileUpload] = useState(false);
+  const [databaseContext, setDatabaseContext] = useState<any>(null);
+  const [systemOperations, setSystemOperations] = useState<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
   // Manual input handling
@@ -115,10 +133,13 @@ Apa yang bisa saya bantu hari ini?`,
         body: JSON.stringify({
           messages: [...messages, userMessage],
           module: currentModule,
+          companyId: 'default-company-id',
           context: {
             currentPage: typeof window !== 'undefined' ? window.location.pathname : '/',
             userRole: 'admin',
-            permissions: ['read', 'write', 'admin']
+            permissions: ['read', 'write', 'admin'],
+            databaseContext: databaseContext,
+            systemOperations: systemOperations
           }
         }),
       });
@@ -262,6 +283,188 @@ Apa yang bisa saya bantu hari ini?`,
 
   // Functions are now handled by useChat hook
 
+  // Handle system operations
+  const executeSystemOperation = async (operation: string, data: any) => {
+    try {
+      const response = await fetch('/api/ai/system-operations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          operation,
+          data,
+          companyId: 'default-company-id',
+          module: currentModule
+        }),
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        // Add success message
+        const successMessage: ChatMessage = {
+          id: Date.now().toString(),
+          role: 'assistant',
+          content: `✅ **Operasi berhasil dijalankan!**
+
+${result.result.message}
+
+**Data yang dibuat:**
+${JSON.stringify(result.result.data, null, 2)}`
+        };
+
+        setMessages(prev => [...prev, successMessage]);
+        
+        // Reload database context via API
+        const contextResponse = await fetch('/api/ai/smart/context', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            companyId: 'default-company-id',
+            module: currentModule
+          }),
+        });
+
+        if (contextResponse.ok) {
+          const contextData = await contextResponse.json();
+          setDatabaseContext(contextData.databaseContext);
+        }
+      } else {
+        // Add error message
+        const errorMessage: ChatMessage = {
+          id: Date.now().toString(),
+          role: 'assistant',
+          content: `❌ **Operasi gagal!**
+
+${result.error}
+
+**Detail error:**
+${result.details}`
+        };
+
+        setMessages(prev => [...prev, errorMessage]);
+      }
+
+    } catch (error) {
+      console.error('Operation execution error:', error);
+      const errorMessage: ChatMessage = {
+        id: Date.now().toString(),
+        role: 'assistant',
+        content: `❌ **Error menjalankan operasi!**
+
+${error instanceof Error ? error.message : 'Unknown error'}`
+      };
+
+      setMessages(prev => [...prev, errorMessage]);
+    }
+  };
+
+  // Handle document processing
+  const processDocument = async (file: File) => {
+    try {
+      const reader = new FileReader();
+      const fileData = await new Promise<string>((resolve, reject) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      const response = await fetch('/api/ai/document-process', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          imageData: fileData,
+          companyId: 'default-company-id',
+          module: currentModule
+        }),
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        // Add document analysis message
+        const analysisMessage: ChatMessage = {
+          id: Date.now().toString(),
+          role: 'assistant',
+          content: `📄 **Dokumen berhasil diproses!**
+
+**Tipe Dokumen:** ${result.documentAnalysis.type}
+**Confidence:** ${Math.round(result.documentAnalysis.confidence * 100)}%
+
+**Data yang diekstrak:**
+${Object.entries(result.documentAnalysis.extractedData).map(([key, value]) => 
+  `- ${key}: ${value}`
+).join('\n')}
+
+**Saran:**
+${result.suggestions.map((suggestion: string) => `- ${suggestion}`).join('\n')}
+
+${result.accountingOperation.operation ? 
+  `**Operasi yang disarankan:** ${result.accountingOperation.operation}` : 
+  'Tidak ada operasi yang disarankan'
+}`
+        };
+
+        setMessages(prev => [...prev, analysisMessage]);
+
+        // If there's a suggested operation, offer to execute it
+        if (result.accountingOperation.operation) {
+          const operationMessage: ChatMessage = {
+            id: (Date.now() + 1).toString(),
+            role: 'assistant',
+            content: `Apakah Anda ingin menjalankan operasi "${result.accountingOperation.operation}" dengan data yang diekstrak?`,
+            countaMessage: {
+              id: (Date.now() + 2).toString(),
+              type: 'ai',
+              timestamp: new Date(),
+              components: [{
+                type: 'action',
+                variant: 'context-aware',
+                title: 'Operasi yang Tersedia',
+                actions: [{
+                  id: 'execute-operation',
+                  label: 'Jalankan Operasi',
+                  action: 'execute_operation',
+                  variant: 'primary'
+                }]
+              }]
+            }
+          };
+
+          setMessages(prev => [...prev, operationMessage]);
+        }
+      } else {
+        // Add error message
+        const errorMessage: ChatMessage = {
+          id: Date.now().toString(),
+          role: 'assistant',
+          content: `❌ **Gagal memproses dokumen!**
+
+${result.error}`
+        };
+
+        setMessages(prev => [...prev, errorMessage]);
+      }
+
+    } catch (error) {
+      console.error('Document processing error:', error);
+      const errorMessage: ChatMessage = {
+        id: Date.now().toString(),
+        role: 'assistant',
+        content: `❌ **Error memproses dokumen!**
+
+${error instanceof Error ? error.message : 'Unknown error'}`
+      };
+
+      setMessages(prev => [...prev, errorMessage]);
+    }
+  };
+
   // Handle body scroll lock
   useEffect(() => {
     if (isOpen) {
@@ -272,6 +475,44 @@ Apa yang bisa saya bantu hari ini?`,
       document.body.style.overflow = 'unset';
     };
   }, [isOpen]);
+
+  // Load database context and system operations
+  useEffect(() => {
+    const loadSystemContext = async () => {
+      try {
+        const companyId = 'default-company-id';
+        
+        // Load database context via API
+        const response = await fetch('/api/ai/smart/context', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            companyId,
+            module: currentModule
+          }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setDatabaseContext(data.databaseContext);
+          setSystemOperations(data.systemOperations);
+          
+          console.log('✅ Database context loaded:', data.databaseContext);
+          console.log('✅ System operations loaded:', data.systemOperations);
+        } else {
+          console.error('❌ Failed to load system context');
+        }
+      } catch (error) {
+        console.error('❌ Error loading system context:', error);
+      }
+    };
+
+    if (isOpen) {
+      loadSystemContext();
+    }
+  }, [isOpen, currentModule]);
 
   // Auto-scroll to bottom when new messages arrive (only when not manually scrolling)
   const [isUserScrolling, setIsUserScrolling] = useState(false);
@@ -376,6 +617,7 @@ Apa yang bisa saya bantu hari ini?`,
       "Input transaksi penjualan",
       "Generate laporan laba rugi",
       "Setup akun bank",
+      "Upload dokumen (invoice/receipt)",
       "Troubleshoot error aplikasi"
     ];
 
@@ -386,7 +628,28 @@ Apa yang bisa saya bantu hari ini?`,
         "Validasi struktur COA",
         "Tambah Customer baru",
         "Tambah Vendor baru",
-        "Setup akun bank"
+        "Setup akun bank",
+        "Upload dokumen (invoice/receipt)"
+      ];
+    }
+
+    if (currentModule === 'sales') {
+      return [
+        "Buat invoice baru",
+        "Input transaksi penjualan",
+        "Upload invoice customer",
+        "Generate laporan penjualan",
+        "Setup customer baru"
+      ];
+    }
+
+    if (currentModule === 'purchases') {
+      return [
+        "Buat bill baru",
+        "Input transaksi pembelian",
+        "Upload bill vendor",
+        "Generate laporan pembelian",
+        "Setup vendor baru"
       ];
     }
 
@@ -401,6 +664,35 @@ Apa yang bisa saya bantu hari ini?`,
     setTimeout(() => {
       handleFormSubmit({ preventDefault: () => {} } as any);
     }, 100);
+  };
+
+  const handleFileProcessed = async (result: any) => {
+    console.log('File processed:', result);
+    
+    // Add user message about file upload
+    const userMessage: ChatMessage = {
+      id: Date.now().toString(),
+      role: 'user',
+      content: `Saya upload dokumen: ${result.fileName || 'Unknown file'}`,
+    };
+    
+    setMessages(prev => [...prev, userMessage]);
+    setShowFileUpload(false);
+    
+    // Process the file with document processing AI
+    if (result.file) {
+      await processDocument(result.file);
+    } else {
+      // Fallback to old method if no file object
+      setTimeout(() => {
+        handleFormSubmit({ preventDefault: () => {} } as any);
+      }, 100);
+    }
+  };
+
+  const handleFileError = (error: string) => {
+    console.error('File processing error:', error);
+    setError(`Error processing file: ${error}`);
   };
 
   if (!isOpen) return null;
@@ -532,6 +824,26 @@ Apa yang bisa saya bantu hari ini?`,
                           onAction={(actionId, action, data) => {
                             console.log('Counta action:', { actionId, action, data });
                             
+                            // Handle execute_operation action
+                            if (actionId === 'execute-operation') {
+                              // Find the operation data from the message context
+                              const message = messages.find(msg => msg.countaMessage?.components?.some(comp => 
+                                comp.type === 'action' && comp.actions?.some(act => act.id === 'execute-operation')
+                              ));
+                              
+                              if (message) {
+                                // Extract operation from the message content
+                                const operationMatch = message.content.match(/operasi "([^"]+)"/);
+                                if (operationMatch) {
+                                  const operation = operationMatch[1];
+                                  // You would need to store the operation data somewhere accessible
+                                  // For now, we'll use a placeholder
+                                  executeSystemOperation(operation, {});
+                                }
+                              }
+                              return;
+                            }
+                            
                             // Ensure action is defined and is a string
                             const actionStr = String(action || '');
                             
@@ -625,6 +937,32 @@ Apa yang bisa saya bantu hari ini?`,
               </div>
             )}
 
+            {/* File Upload Area */}
+            {showFileUpload && (
+              <div className="border-t p-4 bg-gray-50">
+                <div className="max-w-4xl mx-auto">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-sm font-medium text-gray-900">Upload Dokumen</h3>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowFileUpload(false)}
+                      className="h-6 w-6 p-0"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <FileUpload
+                    onFileProcessed={handleFileProcessed}
+                    onError={handleFileError}
+                    maxFiles={3}
+                    acceptedTypes={['image/*', 'application/pdf', 'text/plain']}
+                    maxSize={10}
+                  />
+                </div>
+              </div>
+            )}
+
             {/* Input Area - Compact */}
             <div className="border-t p-3 bg-white">
               <form onSubmit={handleFormSubmit} className="flex gap-2 max-w-4xl mx-auto">
@@ -636,6 +974,16 @@ Apa yang bisa saya bantu hari ini?`,
                   disabled={isLoading}
                   className="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
                 />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowFileUpload(!showFileUpload)}
+                  className="h-9 px-3"
+                  title="Upload File"
+                >
+                  <Upload className="h-3.5 w-3.5" />
+                </Button>
                 <Button
                   type="submit"
                   disabled={isLoading || !inputValue.trim()}
@@ -651,7 +999,7 @@ Apa yang bisa saya bantu hari ini?`,
               </form>
               <div className="flex justify-between items-center mt-1.5 max-w-4xl mx-auto px-1">
                 <div className="text-xs text-gray-400">
-                  Enter kirim • Shift+Enter baris baru
+                  Enter kirim • Shift+Enter baris baru • Upload untuk dokumen
                 </div>
                 <div className={`text-xs ${inputValue.length > 900 ? 'text-red-500' : inputValue.length > 700 ? 'text-yellow-500' : 'text-gray-400'}`}>
                   {inputValue.length}/1000
