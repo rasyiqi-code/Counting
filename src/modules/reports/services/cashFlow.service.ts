@@ -27,7 +27,7 @@ export class CashFlowService {
       },
     });
 
-    const cashAccountIds = cashAccounts.map(a => a.id);
+    const cashAccountIds = cashAccounts.map((a: any) => a.id);
 
     // Get beginning cash balance
     const beginningBalance = await this.getCashBalance(companyId, cashAccountIds, startDate, true);

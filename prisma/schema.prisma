@@ -48,6 +48,7 @@ model Company {
   stockMovements StockMovement[]
   budgets     Budget[]
   recurringTransactions RecurringTransaction[]
+  aiSettings  AISettings[]
 
   @@map("companies")
 }
@@ -695,5 +696,28 @@ model RecurringTransaction {
   @@index([companyId])
   @@index([nextRunDate])
   @@map("recurring_transactions")
+}
+
+// ============================================================================
+// AI SETTINGS MODELS
+// ============================================================================
+
+model AISettings {
+  id          String   @id @default(uuid())
+  companyId   String
+  provider    String   // openai, claude, gemini, deepseek, etc.
+  apiKey      String   // Encrypted API key
+  baseUrl     String?  // Custom base URL for providers
+  isEnabled   Boolean  @default(false)
+  isDefault   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, provider])
+  @@index([companyId])
+  @@index([provider])
+  @@map("ai_settings")
 }
 

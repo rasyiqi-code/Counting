@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/card';
 import { Button } from '@/shared/ui/button';
-import { Building, Users, FileText } from 'lucide-react';
+import { Building, Users, FileText, Bot } from 'lucide-react';
 import Link from 'next/link';
 import { AnimatedGradientText } from '@/components/ui/animated-gradient-text';
 import { BorderBeam } from '@/components/ui/border-beam';
@@ -19,7 +19,7 @@ export default function SettingsPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         <Card className="hover:shadow-lg transition-shadow relative overflow-hidden">
           <BorderBeam size={200} duration={12} delay={0} />
           <CardHeader>
@@ -58,6 +58,20 @@ export default function SettingsPage() {
           <CardContent>
             <Link href="/settings/audit-trail">
               <Button className="w-full">Lihat Audit Trail</Button>
+            </Link>
+          </CardContent>
+        </Card>
+
+        <Card className="hover:shadow-lg transition-shadow relative overflow-hidden">
+          <BorderBeam size={200} duration={12} delay={9} />
+          <CardHeader>
+            <Bot className="h-8 w-8 text-orange-600 mb-2" />
+            <CardTitle>AI Settings</CardTitle>
+            <CardDescription>Konfigurasi AI providers</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Link href="/settings/ai">
+              <Button className="w-full">Kelola AI Settings</Button>
             </Link>
           </CardContent>
         </Card>

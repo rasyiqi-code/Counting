@@ -52,35 +52,35 @@ export default function PurchaseBillsPage() {
           {isLoading ? (
             <div className="text-center py-12 text-muted-foreground">Loading bills...</div>
           ) : bills && bills.data.length > 0 ? (
-            <Table>
-              <TableHeader>
+            <Table className="border border-border rounded-lg">
+              <TableHeader className="border-b-2 border-border bg-muted/50">
                 <TableRow>
-                  <TableHead>No. Bill</TableHead>
-                  <TableHead>Tanggal</TableHead>
-                  <TableHead>Vendor</TableHead>
-                  <TableHead>Jatuh Tempo</TableHead>
-                  <TableHead className="text-right">Total</TableHead>
-                  <TableHead className="text-center">Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead className="whitespace-nowrap py-2 px-2 border-r border-border font-semibold">No. Bill</TableHead>
+                  <TableHead className="whitespace-nowrap py-2 px-2 border-r border-border font-semibold">Tanggal</TableHead>
+                  <TableHead className="whitespace-nowrap py-2 px-2 border-r border-border font-semibold">Vendor</TableHead>
+                  <TableHead className="whitespace-nowrap py-2 px-2 border-r border-border font-semibold">Jatuh Tempo</TableHead>
+                  <TableHead className="whitespace-nowrap py-2 px-2 border-r border-border font-semibold text-right">Total</TableHead>
+                  <TableHead className="whitespace-nowrap py-2 px-2 border-r border-border font-semibold text-center">Status</TableHead>
+                  <TableHead className="whitespace-nowrap py-2 px-2 font-semibold text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {bills.data.map((bill: any) => (
-                  <TableRow key={bill.id}>
-                    <TableCell className="font-mono font-medium">{bill.invoiceNo}</TableCell>
-                    <TableCell>{formatDate(bill.date)}</TableCell>
-                    <TableCell>{bill.contact?.name}</TableCell>
-                    <TableCell>{formatDate(bill.dueDate)}</TableCell>
-                    <TableCell className="text-right font-medium">{formatCurrency(bill.total.toString())}</TableCell>
-                    <TableCell className="text-center">
-                      <span className={`px-2 py-1 rounded text-xs ${
+                  <TableRow key={bill.id} className="hover:bg-accent/50 border-b border-border">
+                    <TableCell className="py-1 px-2 border-r border-border whitespace-nowrap font-mono font-medium">{bill.invoiceNo}</TableCell>
+                    <TableCell className="py-1 px-2 border-r border-border whitespace-nowrap">{formatDate(bill.date)}</TableCell>
+                    <TableCell className="py-1 px-2 border-r border-border whitespace-nowrap">{bill.contact?.name}</TableCell>
+                    <TableCell className="py-1 px-2 border-r border-border whitespace-nowrap">{formatDate(bill.dueDate)}</TableCell>
+                    <TableCell className="py-1 px-2 border-r border-border whitespace-nowrap text-right font-medium">{formatCurrency(bill.total.toString())}</TableCell>
+                    <TableCell className="py-1 px-2 border-r border-border whitespace-nowrap text-center">
+                      <span className={`px-2 py-0.5 rounded text-xs ${
                         bill.status === 'PAID' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
                       }`}>
                         {bill.status}
                       </span>
                     </TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="ghost" size="icon"><Eye className="h-4 w-4" /></Button>
+                    <TableCell className="py-1 px-2 whitespace-nowrap text-right">
+                      <Button variant="ghost" size="icon" className="h-8 w-8"><Eye className="h-4 w-4" /></Button>
                     </TableCell>
                   </TableRow>
                 ))}

@@ -1,6 +1,11 @@
+ignoredBuiltDependencies:
+  - odbc
+
 onlyBuiltDependencies:
   - '@prisma/client'
   - '@prisma/engines'
   - core-js
+  - dtrace-provider
   - esbuild
+  - odbc
   - prisma

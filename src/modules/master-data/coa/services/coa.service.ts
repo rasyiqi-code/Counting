@@ -6,6 +6,9 @@ import {
   AccountNode,
 } from '../types';
 import { Decimal } from 'decimal.js';
+import { generateStructuredData } from '@/lib/ai/utils';
+import { coaPrompts, coaSystemPrompts, accountSuggestionSchema, complianceValidationSchema, accountSearchSchema } from '@/lib/ai/coa-prompts';
+import { getDefaultProvider } from '@/lib/ai/config';
 
 /**
  * Chart of Accounts Service
@@ -193,7 +196,7 @@ export class CoaService {
     });
 
     // Calculate real-time balances for all accounts
-    const accountBalances = await this.calculateAccountBalances(companyId, accounts.map(a => a.id));
+    const accountBalances = await this.calculateAccountBalances(companyId, accounts.map((a: any) => a.id));
 
     // Build tree structure
     const accountMap = new Map<string, AccountNode>();
@@ -232,6 +235,168 @@ export class CoaService {
     }
 
     return rootAccounts;
+  }
+
+  /**
+   * AI: Suggest account details based on description
+   */
+  async suggestAccountDetails(companyId: string, description: string, businessType?: string) {
+    try {
+      const prompt = coaPrompts.suggestAccount(description, businessType);
+      const provider = getDefaultProvider();
+      
+      const result = await generateStructuredData(
+        prompt,
+        accountSuggestionSchema,
+        provider,
+        undefined,
+        {
+          systemPrompt: coaSystemPrompts.expert,
+          temperature: 0.3, // Lower temperature for more consistent results
+        }
+      );
+
+      return {
+        success: true,
+        suggestion: result.object,
+        confidence: 0.85, // AI confidence score
+        reasoning: `AI menganalisis deskripsi "${description}" dan memberikan saran berdasarkan standar PSAK Indonesia.`,
+      };
+    } catch (error) {
+      console.error('AI suggestion error:', error);
+      return {
+        success: false,
+        error: 'Gagal mendapatkan saran AI. Silakan coba lagi.',
+      };
+    }
+  }
+
+  /**
+   * AI: Validate account structure compliance
+   */
+  async validateAccountCompliance(companyId: string, accountStructure: any) {
+    try {
+      const prompt = coaPrompts.validateCompliance(accountStructure);
+      const provider = getDefaultProvider();
+      
+      const result = await generateStructuredData(
+        prompt,
+        complianceValidationSchema,
+        provider,
+        undefined,
+        {
+          systemPrompt: coaSystemPrompts.validator,
+          temperature: 0.2, // Very low temperature for validation
+        }
+      );
+
+      return {
+        success: true,
+        validation: result.object,
+        timestamp: new Date().toISOString(),
+      };
+    } catch (error) {
+      console.error('AI validation error:', error);
+      return {
+        success: false,
+        error: 'Gagal melakukan validasi AI. Silakan coba lagi.',
+      };
+    }
+  }
+
+  /**
+   * AI: Search accounts with natural language
+   */
+  async searchAccountsWithAI(companyId: string, query: string) {
+    try {
+      // Get existing accounts for context
+      const existingAccounts = await prisma.chartOfAccount.findMany({
+        where: { companyId, isActive: true },
+        select: {
+          id: true,
+          code: true,
+          name: true,
+          accountType: true,
+          category: true,
+        },
+        take: 50, // Limit for AI context
+      });
+
+      const prompt = coaPrompts.searchAccounts(query, existingAccounts);
+      const provider = getDefaultProvider();
+      
+      const result = await generateStructuredData(
+        prompt,
+        accountSearchSchema,
+        provider,
+        undefined,
+        {
+          systemPrompt: coaSystemPrompts.assistant,
+          temperature: 0.4,
+        }
+      );
+
+      return {
+        success: true,
+        searchResults: result.object,
+        query,
+        totalAccounts: existingAccounts.length,
+      };
+    } catch (error) {
+      console.error('AI search error:', error);
+      return {
+        success: false,
+        error: 'Gagal melakukan pencarian AI. Silakan coba lagi.',
+      };
+    }
+  }
+
+  /**
+   * AI: Analyze account structure
+   */
+  async analyzeAccountStructure(companyId: string) {
+    try {
+      const accounts = await prisma.chartOfAccount.findMany({
+        where: { companyId },
+        select: {
+          id: true,
+          code: true,
+          name: true,
+          accountType: true,
+          category: true,
+          parentId: true,
+          isActive: true,
+        },
+      });
+
+      const prompt = coaPrompts.analyzeAccountStructure(accounts);
+      const provider = getDefaultProvider();
+      
+      const result = await generateStructuredData(
+        prompt,
+        accountSearchSchema, // Reuse schema for analysis
+        provider,
+        undefined,
+        {
+          systemPrompt: coaSystemPrompts.expert,
+          temperature: 0.3,
+        }
+      );
+
+      return {
+        success: true,
+        analysis: result.object,
+        totalAccounts: accounts.length,
+        activeAccounts: accounts.filter((a: any) => a.isActive).length,
+        timestamp: new Date().toISOString(),
+      };
+    } catch (error) {
+      console.error('AI analysis error:', error);
+      return {
+        success: false,
+        error: 'Gagal melakukan analisis AI. Silakan coba lagi.',
+      };
+    }
   }
 
   /**

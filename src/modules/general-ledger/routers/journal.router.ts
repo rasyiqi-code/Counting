@@ -103,12 +103,12 @@ export const journalRouter = router({
       ]);
 
       // Calculate total debit and credit for each journal
-      const journalsWithTotals = journals.map((journal) => {
-        const totalDebit = journal.entries.reduce((sum, entry) => {
+      const journalsWithTotals = journals.map((journal: any) => {
+        const totalDebit = journal.entries.reduce((sum: number, entry: any) => {
           return sum + Number(entry.debit.toString());
         }, 0);
         
-        const totalCredit = journal.entries.reduce((sum, entry) => {
+        const totalCredit = journal.entries.reduce((sum: number, entry: any) => {
           return sum + Number(entry.credit.toString());
         }, 0);
 

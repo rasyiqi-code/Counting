@@ -63,28 +63,28 @@ export class IncomeStatementService {
     }
 
     // Build revenue lines
-    const revenueAccounts = accounts.filter(a => a.accountType === 'REVENUE');
-    const revenuelines: IncomeStatementLine[] = revenueAccounts
-      .map(account => ({
+    const revenueAccounts = accounts.filter((a: any) => a.accountType === 'REVENUE');
+    const revenuelines: IncomeStatementLine[] = revenueAccounts  
+      .map((account: any) => ({
         accountId: account.id,
         accountCode: account.code,
         accountName: account.name,
         amount: accountBalances.get(account.id) || new Decimal(0),
       }))
-      .filter(line => !line.amount.isZero());
+      .filter((line: any) => !line.amount.isZero());
 
     const totalRevenue = revenuelines.reduce((sum, line) => sum.plus(line.amount), new Decimal(0));
 
     // Build COGS lines
-    const cogsAccounts = accounts.filter(a => a.accountType === 'COGS');
-    const cogsLines: IncomeStatementLine[] = cogsAccounts
-      .map(account => ({
+    const cogsAccounts = accounts.filter((a: any) => a.accountType === 'COGS');
+    const cogsLines: IncomeStatementLine[] = cogsAccounts        
+      .map((account: any) => ({
         accountId: account.id,
         accountCode: account.code,
         accountName: account.name,
         amount: (accountBalances.get(account.id) || new Decimal(0)).abs(), // Show as positive
       }))
-      .filter(line => !line.amount.isZero());
+      .filter((line: any) => !line.amount.isZero());
 
     const totalCOGS = cogsLines.reduce((sum, line) => sum.plus(line.amount), new Decimal(0));
 
@@ -95,15 +95,15 @@ export class IncomeStatementService {
       : 0;
 
     // Build expense lines
-    const expenseAccounts = accounts.filter(a => a.accountType === 'EXPENSE');
-    const expenseLines: IncomeStatementLine[] = expenseAccounts
-      .map(account => ({
+    const expenseAccounts = accounts.filter((a: any) => a.accountType === 'EXPENSE');
+    const expenseLines: IncomeStatementLine[] = expenseAccounts 
+      .map((account: any) => ({
         accountId: account.id,
         accountCode: account.code,
         accountName: account.name,
         amount: (accountBalances.get(account.id) || new Decimal(0)).abs(), // Show as positive
       }))
-      .filter(line => !line.amount.isZero());
+      .filter((line: any) => !line.amount.isZero());
 
     const totalExpenses = expenseLines.reduce((sum, line) => sum.plus(line.amount), new Decimal(0));
 

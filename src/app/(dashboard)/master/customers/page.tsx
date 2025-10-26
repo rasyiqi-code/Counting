@@ -62,16 +62,16 @@ export default function CustomersPage() {
             </div>
           ) : customers && customers.data.length > 0 ? (
             <>
-              <Table>
+              <Table className="border border-border rounded-lg">
                 <TableHeader>
-                  <TableRow>
-                    <TableHead>Kode</TableHead>
-                    <TableHead>Nama</TableHead>
-                    <TableHead>Kontak</TableHead>
-                    <TableHead>Alamat</TableHead>
-                    <TableHead className="text-right">Credit Limit</TableHead>
-                    <TableHead className="text-center">Payment Terms</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                  <TableRow className="border-b-2 border-border bg-muted/50">
+                    <TableHead className="whitespace-nowrap py-2 px-2 border-r border-border font-semibold">Kode</TableHead>
+                    <TableHead className="whitespace-nowrap py-2 px-2 border-r border-border font-semibold">Nama</TableHead>
+                    <TableHead className="whitespace-nowrap py-2 px-2 border-r border-border font-semibold">Kontak</TableHead>
+                    <TableHead className="whitespace-nowrap py-2 px-2 border-r border-border font-semibold">Alamat</TableHead>
+                    <TableHead className="text-right whitespace-nowrap py-2 px-2 border-r border-border font-semibold">Credit Limit</TableHead>
+                    <TableHead className="text-center whitespace-nowrap py-2 px-2 border-r border-border font-semibold">Payment Terms</TableHead>
+                    <TableHead className="text-center whitespace-nowrap py-2 px-2 font-semibold">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

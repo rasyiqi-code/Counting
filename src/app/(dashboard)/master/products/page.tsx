@@ -72,27 +72,27 @@ export default function ProductsPage() {
             </div>
           ) : products && products.data.length > 0 ? (
             <>
-              <Table>
-                <TableHeader>
+              <Table className="border border-border rounded-lg">
+                <TableHeader className="border-b-2 border-border bg-muted/50">
                   <TableRow>
-                    <TableHead>SKU</TableHead>
-                    <TableHead>Nama</TableHead>
-                    <TableHead>Tipe</TableHead>
-                    <TableHead>Kategori</TableHead>
-                    <TableHead className="text-right">Harga Jual</TableHead>
-                    <TableHead className="text-right">Harga Beli</TableHead>
-                    <TableHead className="text-center">Unit</TableHead>
-                    <TableHead className="text-center">Stock</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead className="whitespace-nowrap py-2 px-2 border-r border-border font-semibold">SKU</TableHead>
+                    <TableHead className="whitespace-nowrap py-2 px-2 border-r border-border font-semibold">Nama</TableHead>
+                    <TableHead className="whitespace-nowrap py-2 px-2 border-r border-border font-semibold">Tipe</TableHead>
+                    <TableHead className="whitespace-nowrap py-2 px-2 border-r border-border font-semibold">Kategori</TableHead>
+                    <TableHead className="whitespace-nowrap py-2 px-2 border-r border-border font-semibold text-right">Harga Jual</TableHead>
+                    <TableHead className="whitespace-nowrap py-2 px-2 border-r border-border font-semibold text-right">Harga Beli</TableHead>
+                    <TableHead className="whitespace-nowrap py-2 px-2 border-r border-border font-semibold text-center">Unit</TableHead>
+                    <TableHead className="whitespace-nowrap py-2 px-2 border-r border-border font-semibold text-center">Stock</TableHead>
+                    <TableHead className="whitespace-nowrap py-2 px-2 font-semibold text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {products.data.map((product: any) => (
-                    <TableRow key={product.id}>
-                      <TableCell className="font-mono font-medium">
+                    <TableRow key={product.id} className="hover:bg-accent/50 border-b border-border">
+                      <TableCell className="py-1 px-2 border-r border-border whitespace-nowrap font-mono font-medium">
                         {product.sku}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="py-1 px-2 border-r border-border whitespace-nowrap">
                         <div>
                           <div className="font-medium">{product.name}</div>
                           {product.description && (
@@ -102,8 +102,8 @@ export default function ProductsPage() {
                           )}
                         </div>
                       </TableCell>
-                      <TableCell>
-                        <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
+                      <TableCell className="py-1 px-2 border-r border-border whitespace-nowrap">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
                           product.type === 'GOODS' 
                             ? 'bg-blue-100 text-blue-800' 
                             : 'bg-purple-100 text-purple-800'
@@ -111,19 +111,19 @@ export default function ProductsPage() {
                           {product.type === 'GOODS' ? 'Barang' : 'Jasa'}
                         </span>
                       </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
+                      <TableCell className="py-1 px-2 border-r border-border whitespace-nowrap text-sm text-muted-foreground">
                         {product.category || '-'}
                       </TableCell>
-                      <TableCell className="text-right font-medium">
+                      <TableCell className="py-1 px-2 border-r border-border whitespace-nowrap text-right font-medium">
                         {formatCurrency(product.salePrice.toString())}
                       </TableCell>
-                      <TableCell className="text-right text-muted-foreground">
+                      <TableCell className="py-1 px-2 border-r border-border whitespace-nowrap text-right text-muted-foreground">
                         {formatCurrency(product.purchasePrice.toString())}
                       </TableCell>
-                      <TableCell className="text-center text-sm">
+                      <TableCell className="py-1 px-2 border-r border-border whitespace-nowrap text-center text-sm">
                         {product.unit}
                       </TableCell>
-                      <TableCell className="text-center">
+                      <TableCell className="py-1 px-2 border-r border-border whitespace-nowrap text-center">
                         {product.trackInventory ? (
                           <span className="text-sm font-medium text-blue-600">
                             Tracked
@@ -132,9 +132,9 @@ export default function ProductsPage() {
                           <span className="text-xs text-muted-foreground">-</span>
                         )}
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="py-1 px-2 whitespace-nowrap text-right">
                         <Link href={`/master/products/${product.id}`}>
-                          <Button variant="ghost" size="icon">
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
                             <Eye className="h-4 w-4" />
                           </Button>
                         </Link>

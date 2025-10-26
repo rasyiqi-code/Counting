@@ -90,7 +90,7 @@ export class PurchasePaymentService {
 
     // Validate allocations don't exceed bill balances
     for (const allocation of input.allocations) {
-      const bill = bills.find(b => b.id === allocation.invoiceId)!;
+      const bill = bills.find((b: any) => b.id === allocation.invoiceId)!;
       const balance = new Decimal(bill.total).minus(new Decimal(bill.paidAmount));
       
       if (new Decimal(allocation.amount).greaterThan(balance)) {
@@ -150,7 +150,7 @@ export class PurchasePaymentService {
 
     // Update bill paid amounts and statuses
     for (const allocation of input.allocations) {
-      const bill = bills.find(b => b.id === allocation.invoiceId)!;
+      const bill = bills.find((b: any) => b.id === allocation.invoiceId)!;
       const newPaidAmount = new Decimal(bill.paidAmount).plus(new Decimal(allocation.amount));
       const total = new Decimal(bill.total);
 

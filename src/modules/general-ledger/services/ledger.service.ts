@@ -205,7 +205,7 @@ export class LedgerService {
 
     // Build trial balance
     const trialBalanceAccounts = accounts
-      .map(account => {
+      .map((account: any) => {
         const balance = accountBalances.get(account.id);
         if (!balance || (balance.debit.isZero() && balance.credit.isZero())) {
           return null; // Skip accounts with zero balance

@@ -78,7 +78,7 @@ export const inventoryRouter = router({
 
       // Calculate quantity before for each adjustment
       const adjustmentsWithQuantityBefore = await Promise.all(
-        adjustments.map(async (adjustment) => {
+        adjustments.map(async (adjustment: any) => {
           // Get all movements for this product before this adjustment date
           const previousMovements = await ctx.prisma.stockMovement.findMany({
             where: {
@@ -95,7 +95,7 @@ export const inventoryRouter = router({
           });
 
           // Calculate running balance
-          const quantityBefore = previousMovements.reduce((sum, movement) => {
+          const quantityBefore = previousMovements.reduce((sum: number, movement: any) => {
             return sum + Number(movement.quantity.toString());
           }, 0);
 
@@ -164,7 +164,7 @@ export const inventoryRouter = router({
       });
 
       // Calculate running balance
-      const quantityBefore = previousMovements.reduce((sum, movement) => {
+      const quantityBefore = previousMovements.reduce((sum: number, movement: any) => {
         return sum + Number(movement.quantity.toString());
       }, 0);
 

@@ -124,11 +124,11 @@ export const reportsRouter = router({
         ]);
 
         // Calculate totals
-        const totalPPNInput = inputEntries.reduce((sum, entry) => {
+        const totalPPNInput = inputEntries.reduce((sum: any, entry: any) => {
           return sum.plus(new Decimal(entry.debit)).minus(new Decimal(entry.credit));
         }, new Decimal(0));
 
-        const totalPPNOutput = outputEntries.reduce((sum, entry) => {
+        const totalPPNOutput = outputEntries.reduce((sum: any, entry: any) => {
           return sum.plus(new Decimal(entry.credit)).minus(new Decimal(entry.debit));
         }, new Decimal(0));
 
@@ -188,7 +188,7 @@ export const reportsRouter = router({
           },
         });
 
-        const total = entries.reduce((sum, entry) => {
+        const total = entries.reduce((sum: any, entry: any) => {
           return sum.plus(new Decimal(entry.credit)).minus(new Decimal(entry.debit));
         }, new Decimal(0));
 

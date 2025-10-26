@@ -55,27 +55,27 @@ export default function OtherIncomePage() {
           {isLoading ? (
             <div className="text-center py-12 text-muted-foreground">Loading other income...</div>
           ) : incomes && incomes.data.length > 0 ? (
-            <Table>
-              <TableHeader>
+            <Table className="border border-border rounded-lg">
+              <TableHeader className="border-b-2 border-border bg-muted/50">
                 <TableRow>
-                  <TableHead>No. Transaksi</TableHead>
-                  <TableHead>Tanggal</TableHead>
-                  <TableHead>Deskripsi</TableHead>
-                  <TableHead>Akun</TableHead>
-                  <TableHead className="text-right">Amount</TableHead>
-                  <TableHead>Actions</TableHead>
+                  <TableHead className="whitespace-nowrap py-2 px-2 border-r border-border font-semibold">No. Transaksi</TableHead>
+                  <TableHead className="whitespace-nowrap py-2 px-2 border-r border-border font-semibold">Tanggal</TableHead>
+                  <TableHead className="whitespace-nowrap py-2 px-2 border-r border-border font-semibold">Deskripsi</TableHead>
+                  <TableHead className="whitespace-nowrap py-2 px-2 border-r border-border font-semibold">Akun</TableHead>
+                  <TableHead className="whitespace-nowrap py-2 px-2 border-r border-border font-semibold text-right">Amount</TableHead>
+                  <TableHead className="whitespace-nowrap py-2 px-2 font-semibold">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {incomes.data.map((income: any) => (
-                  <TableRow key={income.id}>
-                    <TableCell className="font-mono">{income.transactionNo}</TableCell>
-                    <TableCell>{formatDate(income.date)}</TableCell>
-                    <TableCell>{income.description}</TableCell>
-                    <TableCell>{income.account?.name}</TableCell>
-                    <TableCell className="text-right font-medium">{formatCurrency(income.amount.toString())}</TableCell>
-                    <TableCell>
-                      <Button variant="ghost" size="icon">
+                  <TableRow key={income.id} className="hover:bg-accent/50 border-b border-border">
+                    <TableCell className="py-1 px-2 border-r border-border whitespace-nowrap font-mono">{income.transactionNo}</TableCell>
+                    <TableCell className="py-1 px-2 border-r border-border whitespace-nowrap">{formatDate(income.date)}</TableCell>
+                    <TableCell className="py-1 px-2 border-r border-border whitespace-nowrap">{income.description}</TableCell>
+                    <TableCell className="py-1 px-2 border-r border-border whitespace-nowrap">{income.account?.name}</TableCell>
+                    <TableCell className="py-1 px-2 border-r border-border whitespace-nowrap text-right font-medium">{formatCurrency(income.amount.toString())}</TableCell>
+                    <TableCell className="py-1 px-2 whitespace-nowrap">
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
                         <Eye className="h-4 w-4" />
                       </Button>
                     </TableCell>

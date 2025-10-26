@@ -74,11 +74,11 @@ export default function JournalDetailPage() {
     );
   }
 
-  const totalDebit = journal.entries.reduce((sum, entry) => {
+  const totalDebit = journal.entries.reduce((sum: number, entry: any) => {
     return sum + Number(entry.debit.toString());
   }, 0);
 
-  const totalCredit = journal.entries.reduce((sum, entry) => {
+  const totalCredit = journal.entries.reduce((sum: number, entry: any) => {
     return sum + Number(entry.credit.toString());
   }, 0);
 

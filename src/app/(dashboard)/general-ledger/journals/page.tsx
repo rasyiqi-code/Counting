@@ -80,29 +80,31 @@ export default function JournalsPage() {
             </div>
           ) : journals && journals.data.length > 0 ? (
             <>
-              <Table>
+              <Table className="border border-border rounded-lg">
                 <TableHeader>
-                  <TableRow>
-                    <TableHead>No. Journal</TableHead>
-                    <TableHead>Tanggal</TableHead>
-                    <TableHead>Deskripsi</TableHead>
-                    <TableHead>Ref. No</TableHead>
-                    <TableHead className="text-right">Debit</TableHead>
-                    <TableHead className="text-right">Kredit</TableHead>
-                    <TableHead className="text-center">Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                  <TableRow className="border-b-2 border-border bg-muted/50">
+                    <TableHead className="whitespace-nowrap py-2 px-2 border-r border-border font-semibold">No. Journal</TableHead>
+                    <TableHead className="whitespace-nowrap py-2 px-2 border-r border-border font-semibold">Tanggal</TableHead>
+                    <TableHead className="whitespace-nowrap py-2 px-2 border-r border-border font-semibold">Deskripsi</TableHead>
+                    <TableHead className="whitespace-nowrap py-2 px-2 border-r border-border font-semibold">Ref. No</TableHead>
+                    <TableHead className="text-right whitespace-nowrap py-2 px-2 border-r border-border font-semibold">Debit</TableHead>
+                    <TableHead className="text-right whitespace-nowrap py-2 px-2 border-r border-border font-semibold">Kredit</TableHead>
+                    <TableHead className="text-center whitespace-nowrap py-2 px-2 border-r border-border font-semibold">Status</TableHead>
+                    <TableHead className="text-center whitespace-nowrap py-2 px-2 font-semibold">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {journals.data.map((journal: any) => (
-                    <TableRow key={journal.id}>
-                      <TableCell className="font-mono font-medium">
+                    <TableRow key={journal.id} className="hover:bg-accent/50 border-b border-border">
+                      <TableCell className="font-mono font-medium py-1 px-2 border-r border-border whitespace-nowrap">
                         {journal.journalNo}
                       </TableCell>
-                      <TableCell>{formatDate(journal.date)}</TableCell>
-                      <TableCell>
+                      <TableCell className="py-1 px-2 border-r border-border whitespace-nowrap">
+                        {formatDate(journal.date)}
+                      </TableCell>
+                      <TableCell className="py-1 px-2 border-r border-border whitespace-nowrap">
                         <div>
-                          <div className="font-medium">{journal.description}</div>
+                          <div className="font-medium truncate">{journal.description}</div>
                           {journal.sourceType && (
                             <div className="text-xs text-muted-foreground">
                               Source: {journal.sourceType}
@@ -110,17 +112,17 @@ export default function JournalsPage() {
                           )}
                         </div>
                       </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
+                      <TableCell className="text-sm text-muted-foreground py-1 px-2 border-r border-border whitespace-nowrap">
                         {journal.referenceNo || '-'}
                       </TableCell>
-                      <TableCell className="text-right font-medium">
+                      <TableCell className="text-right font-medium py-1 px-2 border-r border-border whitespace-nowrap">
                         {formatCurrency(journal.totalDebit.toString())}
                       </TableCell>
-                      <TableCell className="text-right font-medium">
+                      <TableCell className="text-right font-medium py-1 px-2 border-r border-border whitespace-nowrap">
                         {formatCurrency(journal.totalCredit.toString())}
                       </TableCell>
-                      <TableCell className="text-center">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      <TableCell className="text-center py-1 px-2 border-r border-border whitespace-nowrap">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${
                           journal.status === 'POSTED' ? 'bg-green-100 text-green-800' :
                           journal.status === 'VOID' ? 'bg-red-100 text-red-800' :
                           'bg-yellow-100 text-yellow-800'
@@ -128,10 +130,10 @@ export default function JournalsPage() {
                           {journal.status}
                         </span>
                       </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-1">
+                      <TableCell className="text-center py-1 px-2 whitespace-nowrap">
+                        <div className="flex justify-center gap-1">
                           <Link href={`/general-ledger/journals/${journal.id}`}>
-                            <Button variant="ghost" size="icon" title="View Details">
+                            <Button variant="ghost" size="icon" title="View Details" className="h-8 w-8">
                               <Eye className="h-4 w-4" />
                             </Button>
                           </Link>
@@ -140,6 +142,7 @@ export default function JournalsPage() {
                               variant="ghost"
                               size="icon"
                               title="Post Journal"
+                              className="h-8 w-8"
                               onClick={() => postJournal.mutate({ journalId: journal.id })}
                             >
                               <FileCheck className="h-4 w-4" />

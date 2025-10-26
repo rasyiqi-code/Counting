@@ -89,41 +89,45 @@ export default function SalesInvoicesPage() {
             </div>
           ) : invoices && invoices.data.length > 0 ? (
             <>
-              <Table>
+              <Table className="border border-border rounded-lg">
                 <TableHeader>
-                  <TableRow>
-                    <TableHead>No. Invoice</TableHead>
-                    <TableHead>Tanggal</TableHead>
-                    <TableHead>Customer</TableHead>
-                    <TableHead>Jatuh Tempo</TableHead>
-                    <TableHead className="text-right">Total</TableHead>
-                    <TableHead className="text-right">Terbayar</TableHead>
-                    <TableHead className="text-center">Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                  <TableRow className="border-b-2 border-border bg-muted/50">
+                    <TableHead className="whitespace-nowrap py-2 px-2 border-r border-border font-semibold">No. Invoice</TableHead>
+                    <TableHead className="whitespace-nowrap py-2 px-2 border-r border-border font-semibold">Tanggal</TableHead>
+                    <TableHead className="whitespace-nowrap py-2 px-2 border-r border-border font-semibold">Customer</TableHead>
+                    <TableHead className="whitespace-nowrap py-2 px-2 border-r border-border font-semibold">Jatuh Tempo</TableHead>
+                    <TableHead className="text-right whitespace-nowrap py-2 px-2 border-r border-border font-semibold">Total</TableHead>
+                    <TableHead className="text-right whitespace-nowrap py-2 px-2 border-r border-border font-semibold">Terbayar</TableHead>
+                    <TableHead className="text-center whitespace-nowrap py-2 px-2 border-r border-border font-semibold">Status</TableHead>
+                    <TableHead className="text-center whitespace-nowrap py-2 px-2 font-semibold">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {invoices.data.map((invoice: any) => (
-                    <TableRow key={invoice.id}>
-                      <TableCell className="font-mono font-medium">
+                    <TableRow key={invoice.id} className="hover:bg-accent/50 border-b border-border">
+                      <TableCell className="font-mono font-medium py-1 px-2 border-r border-border whitespace-nowrap">
                         {invoice.invoiceNo}
                       </TableCell>
-                      <TableCell>{formatDate(invoice.date)}</TableCell>
-                      <TableCell>
+                      <TableCell className="py-1 px-2 border-r border-border whitespace-nowrap">
+                        {formatDate(invoice.date)}
+                      </TableCell>
+                      <TableCell className="py-1 px-2 border-r border-border whitespace-nowrap">
                         <div>
-                          <div className="font-medium">{invoice.contact?.name}</div>
+                          <div className="font-medium truncate">{invoice.contact?.name}</div>
                           <div className="text-xs text-muted-foreground">{invoice.contact?.code}</div>
                         </div>
                       </TableCell>
-                      <TableCell>{formatDate(invoice.dueDate)}</TableCell>
-                      <TableCell className="text-right font-medium">
+                      <TableCell className="py-1 px-2 border-r border-border whitespace-nowrap">
+                        {formatDate(invoice.dueDate)}
+                      </TableCell>
+                      <TableCell className="text-right font-medium py-1 px-2 border-r border-border whitespace-nowrap">
                         {formatCurrency(invoice.total.toString())}
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-right py-1 px-2 border-r border-border whitespace-nowrap">
                         {formatCurrency(invoice.paidAmount.toString())}
                       </TableCell>
-                      <TableCell className="text-center">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      <TableCell className="text-center py-1 px-2 border-r border-border whitespace-nowrap">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${
                           invoice.status === 'PAID' ? 'bg-green-100 text-green-800' :
                           invoice.status === 'PARTIAL_PAID' ? 'bg-blue-100 text-blue-800' :
                           invoice.status === 'SENT' ? 'bg-yellow-100 text-yellow-800' :
@@ -133,10 +137,10 @@ export default function SalesInvoicesPage() {
                           {invoice.status}
                         </span>
                       </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
+                      <TableCell className="text-center py-1 px-2 whitespace-nowrap">
+                        <div className="flex justify-center gap-1">
                           <Link href={`/sales/invoices/${invoice.id}`}>
-                            <Button variant="ghost" size="icon" title="View Details">
+                            <Button variant="ghost" size="icon" title="View Details" className="h-8 w-8">
                               <Eye className="h-4 w-4" />
                             </Button>
                           </Link>
@@ -144,6 +148,7 @@ export default function SalesInvoicesPage() {
                             variant="ghost" 
                             size="icon"
                             title="Download PDF"
+                            className="h-8 w-8"
                             onClick={() => {
                               console.log('Download invoice:', invoice.id);
                               alert('Download PDF functionality will be implemented soon');

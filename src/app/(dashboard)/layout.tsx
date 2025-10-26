@@ -2,6 +2,7 @@
 
 import { Sidebar } from '@/shared/ui/sidebar';
 import { TopNavigation } from '@/shared/ui/top-navigation';
+import { FloatingAIButton } from '@/components/ai/floating-ai-button';
 import { useState, useEffect } from 'react';
 
 export default function DashboardLayout({
@@ -62,6 +63,9 @@ export default function DashboardLayout({
           </div>
         </main>
       </div>
+      
+      {/* Floating AI Button */}
+      <FloatingAIButton />
     </div>
   );
 }

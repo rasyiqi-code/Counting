@@ -58,17 +58,17 @@ export default function StockAdjustmentsPage() {
           {isLoading ? (
             <div className="text-center py-12 text-muted-foreground">Loading adjustments...</div>
           ) : adjustments && adjustments.data.length > 0 ? (
-            <Table>
-              <TableHeader>
+            <Table className="border border-border rounded-lg">
+              <TableHeader className="border-b-2 border-border bg-muted/50">
                 <TableRow>
-                  <TableHead>No. Adjustment</TableHead>
-                  <TableHead>Tanggal</TableHead>
-                  <TableHead>Produk</TableHead>
-                  <TableHead>Qty Sebelum</TableHead>
-                  <TableHead>Qty Sesudah</TableHead>
-                  <TableHead>Selisih</TableHead>
-                  <TableHead>Alasan</TableHead>
-                  <TableHead>Actions</TableHead>
+                  <TableHead className="whitespace-nowrap py-2 px-2 border-r border-border font-semibold">No. Adjustment</TableHead>
+                  <TableHead className="whitespace-nowrap py-2 px-2 border-r border-border font-semibold">Tanggal</TableHead>
+                  <TableHead className="whitespace-nowrap py-2 px-2 border-r border-border font-semibold">Produk</TableHead>
+                  <TableHead className="whitespace-nowrap py-2 px-2 border-r border-border font-semibold">Qty Sebelum</TableHead>
+                  <TableHead className="whitespace-nowrap py-2 px-2 border-r border-border font-semibold">Qty Sesudah</TableHead>
+                  <TableHead className="whitespace-nowrap py-2 px-2 border-r border-border font-semibold">Selisih</TableHead>
+                  <TableHead className="whitespace-nowrap py-2 px-2 border-r border-border font-semibold">Alasan</TableHead>
+                  <TableHead className="whitespace-nowrap py-2 px-2 font-semibold">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -79,13 +79,13 @@ export default function StockAdjustmentsPage() {
                   const isIncrease = difference > 0;
                   
                   return (
-                    <TableRow key={adj.id}>
-                      <TableCell className="font-mono">{adj.referenceNo}</TableCell>
-                      <TableCell>{formatDate(adj.date)}</TableCell>
-                      <TableCell>{adj.product?.name}</TableCell>
-                      <TableCell className="text-right">{quantityBefore}</TableCell>
-                      <TableCell className="text-right">{quantityAfter}</TableCell>
-                      <TableCell className="text-right">
+                    <TableRow key={adj.id} className="hover:bg-accent/50 border-b border-border">
+                      <TableCell className="py-1 px-2 border-r border-border whitespace-nowrap font-mono">{adj.referenceNo}</TableCell>
+                      <TableCell className="py-1 px-2 border-r border-border whitespace-nowrap">{formatDate(adj.date)}</TableCell>
+                      <TableCell className="py-1 px-2 border-r border-border whitespace-nowrap">{adj.product?.name}</TableCell>
+                      <TableCell className="py-1 px-2 border-r border-border whitespace-nowrap text-right">{quantityBefore}</TableCell>
+                      <TableCell className="py-1 px-2 border-r border-border whitespace-nowrap text-right">{quantityAfter}</TableCell>
+                      <TableCell className="py-1 px-2 border-r border-border whitespace-nowrap text-right">
                         <div className="flex items-center justify-end">
                           {isIncrease ? (
                             <TrendingUp className="h-4 w-4 text-green-500 mr-1" />
@@ -97,10 +97,10 @@ export default function StockAdjustmentsPage() {
                           </span>
                         </div>
                       </TableCell>
-                      <TableCell>{adj.notes}</TableCell>
-                      <TableCell>
+                      <TableCell className="py-1 px-2 border-r border-border whitespace-nowrap">{adj.notes}</TableCell>
+                      <TableCell className="py-1 px-2 whitespace-nowrap">
                         <Link href={`/inventory/adjustments/${adj.id}`}>
-                          <Button variant="ghost" size="icon" title="View Details">
+                          <Button variant="ghost" size="icon" title="View Details" className="h-8 w-8">
                             <Eye className="h-4 w-4" />
                           </Button>
                         </Link>

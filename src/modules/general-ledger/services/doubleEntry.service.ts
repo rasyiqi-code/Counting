@@ -149,7 +149,7 @@ export class DoubleEntryService {
     }
 
     // Create reversing entries (swap debit and credit)
-    const reversingEntries = originalJournal.entries.map(entry => ({
+    const reversingEntries = originalJournal.entries.map((entry: any) => ({
       accountId: entry.accountId,
       debit: entry.credit, // Swap
       credit: entry.debit, // Swap

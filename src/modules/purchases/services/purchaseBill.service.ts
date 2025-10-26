@@ -128,7 +128,7 @@ export class PurchaseBillService {
 
     // Prepare items with tax info
     const itemsWithTax = input.items.map(item => {
-      const product = products.find(p => p.id === item.productId)!;
+      const product = products.find((p: any) => p.id === item.productId)!;
       return {
         ...item,
         taxRate: item.taxRateId ? undefined : (product.taxable && product.taxRate ? product.taxRate.rate.toString() : '0'),

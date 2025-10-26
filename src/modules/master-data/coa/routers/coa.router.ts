@@ -145,5 +145,55 @@ export const coaRouter = router({
         },
       };
     }),
+
+  /**
+   * AI: Suggest account details
+   */
+  suggestAccount: protectedProcedure
+    .input(z.object({
+      description: z.string(),
+      businessType: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const companyId = 'default-company-id'; // TODO: Get from session
+      
+      return await coaService.suggestAccountDetails(companyId, input.description, input.businessType);
+    }),
+
+  /**
+   * AI: Validate account structure compliance
+   */
+  validateCompliance: protectedProcedure
+    .input(z.object({
+      accountStructure: z.any(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const companyId = 'default-company-id'; // TODO: Get from session
+      
+      return await coaService.validateAccountCompliance(companyId, input.accountStructure);
+    }),
+
+  /**
+   * AI: Natural language search accounts
+   */
+  searchAccountsAI: protectedProcedure
+    .input(z.object({
+      query: z.string(),
+    }))
+    .query(async ({ ctx, input }) => {
+      const companyId = 'default-company-id'; // TODO: Get from session
+      
+      return await coaService.searchAccountsWithAI(companyId, input.query);
+    }),
+
+  /**
+   * AI: Analyze account structure
+   */
+  analyzeStructure: protectedProcedure
+    .query(async ({ ctx }) => {
+      const companyId = 'default-company-id'; // TODO: Get from session
+      
+      return await coaService.analyzeAccountStructure(companyId);
+    }),
 });
 

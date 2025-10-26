@@ -62,24 +62,24 @@ export default function VendorsPage() {
             </div>
           ) : vendors && vendors.data.length > 0 ? (
             <>
-              <Table>
-                <TableHeader>
+              <Table className="border border-border rounded-lg">
+                <TableHeader className="border-b-2 border-border bg-muted/50">
                   <TableRow>
-                    <TableHead>Kode</TableHead>
-                    <TableHead>Nama</TableHead>
-                    <TableHead>Kontak</TableHead>
-                    <TableHead>Bank Info</TableHead>
-                    <TableHead className="text-center">Payment Terms</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead className="whitespace-nowrap py-2 px-2 border-r border-border font-semibold">Kode</TableHead>
+                    <TableHead className="whitespace-nowrap py-2 px-2 border-r border-border font-semibold">Nama</TableHead>
+                    <TableHead className="whitespace-nowrap py-2 px-2 border-r border-border font-semibold">Kontak</TableHead>
+                    <TableHead className="whitespace-nowrap py-2 px-2 border-r border-border font-semibold">Bank Info</TableHead>
+                    <TableHead className="whitespace-nowrap py-2 px-2 border-r border-border font-semibold text-center">Payment Terms</TableHead>
+                    <TableHead className="whitespace-nowrap py-2 px-2 font-semibold text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {vendors.data.map((vendor: any) => (
-                    <TableRow key={vendor.id}>
-                      <TableCell className="font-mono font-medium">
+                    <TableRow key={vendor.id} className="hover:bg-accent/50 border-b border-border">
+                      <TableCell className="py-1 px-2 border-r border-border whitespace-nowrap font-mono font-medium">
                         {vendor.code}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="py-1 px-2 border-r border-border whitespace-nowrap">
                         <div>
                           <div className="font-medium">{vendor.name}</div>
                           {vendor.npwp && (
@@ -89,7 +89,7 @@ export default function VendorsPage() {
                           )}
                         </div>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="py-1 px-2 border-r border-border whitespace-nowrap">
                         <div className="space-y-1">
                           {vendor.email && (
                             <div className="flex items-center gap-1 text-xs">
@@ -105,7 +105,7 @@ export default function VendorsPage() {
                           )}
                         </div>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="py-1 px-2 border-r border-border whitespace-nowrap">
                         {vendor.bankName && (
                           <div className="text-sm">
                             <div className="font-medium">{vendor.bankName}</div>
@@ -115,12 +115,12 @@ export default function VendorsPage() {
                           </div>
                         )}
                       </TableCell>
-                      <TableCell className="text-center">
+                      <TableCell className="py-1 px-2 border-r border-border whitespace-nowrap text-center">
                         {vendor.paymentTerms ? `${vendor.paymentTerms} hari` : '-'}
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="py-1 px-2 whitespace-nowrap text-right">
                         <Link href={`/master/vendors/${vendor.id}`}>
-                          <Button variant="ghost" size="icon">
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
                             <Eye className="h-4 w-4" />
                           </Button>
                         </Link>

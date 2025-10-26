@@ -47,7 +47,7 @@ export class BalanceSheetService {
 
     for (const journal of journals) {
       for (const entry of journal.entries) {
-        const account = accounts.find(a => a.id === entry.accountId);
+        const account = accounts.find((a: any) => a.id === entry.accountId);
         if (!account) continue;
 
         const debit = new Decimal(entry.debit);
@@ -66,7 +66,7 @@ export class BalanceSheetService {
     }
 
     // Build asset lines
-    const assetAccounts = accounts.filter(a => a.accountType === 'ASSET');
+    const assetAccounts = accounts.filter((a: any) => a.accountType === 'ASSET');
     const currentAssets: BalanceSheetLine[] = [];
     const fixedAssets: BalanceSheetLine[] = [];
 
@@ -94,7 +94,7 @@ export class BalanceSheetService {
     );
 
     // Build liability lines
-    const liabilityAccounts = accounts.filter(a => a.accountType === 'LIABILITY');
+    const liabilityAccounts = accounts.filter((a: any) => a.accountType === 'LIABILITY');
     const currentLiabilities: BalanceSheetLine[] = [];
     const longTermLiabilities: BalanceSheetLine[] = [];
 
@@ -122,7 +122,7 @@ export class BalanceSheetService {
     );
 
     // Build equity lines
-    const equityAccounts = accounts.filter(a => a.accountType === 'EQUITY');
+    const equityAccounts = accounts.filter((a: any) => a.accountType === 'EQUITY');
     const equityLines: BalanceSheetLine[] = [];
 
     for (const account of equityAccounts) {

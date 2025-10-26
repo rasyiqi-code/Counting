@@ -123,7 +123,7 @@ export class PeriodClosingService {
 
     for (const journal of journals) {
       for (const entry of journal.entries) {
-        const account = accounts.find(a => a.id === entry.accountId);
+        const account = accounts.find((a: any) => a.id === entry.accountId);
         if (!account) continue;
 
         const debit = new Decimal(entry.debit);
@@ -144,7 +144,7 @@ export class PeriodClosingService {
     const closingEntries = [];
 
     // Zero out revenue accounts
-    for (const account of accounts.filter(a => a.accountType === 'REVENUE')) {
+    for (const account of accounts.filter((a: any) => a.accountType === 'REVENUE')) {
       const balance = accountBalances.get(account.id);
       if (balance && balance.greaterThan(0)) {
         closingEntries.push({
@@ -157,7 +157,7 @@ export class PeriodClosingService {
     }
 
     // Zero out expense & cogs accounts
-    for (const account of accounts.filter(a => ['COGS', 'EXPENSE'].includes(a.accountType))) {
+    for (const account of accounts.filter((a: any) => ['COGS', 'EXPENSE'].includes(a.accountType))) {
       const balance = accountBalances.get(account.id);
       if (balance && balance.greaterThan(0)) {
         closingEntries.push({
@@ -172,7 +172,7 @@ export class PeriodClosingService {
     // Calculate net income
     let netIncome = new Decimal(0);
     accountBalances.forEach((balance, accountId) => {
-      const account = accounts.find(a => a.id === accountId);
+      const account = accounts.find((a: any) => a.id === accountId);
       if (!account) return;
 
       if (account.accountType === 'REVENUE') {
